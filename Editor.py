@@ -1,14 +1,10 @@
 from tkinter import *
 import tkinter.scrolledtext as scrolledtext
 import compilator,_parser_
-from tkextrafont import Font
-
 
 class App(Tk):
     def __init__(self):
         super().__init__()
-
-        self.Ephesis = Font(file='Ephesis-Regular.ttf')
 
         self.f1=Frame(self)
         self.f1.pack(side=TOP)
@@ -29,7 +25,7 @@ class App(Tk):
         self.text.insert(END,chr(8422)+'-'*i+'\n')
         self.text.bind("<KeyRelease>", self.on_change)
         self.text.bind("<period>", self.compile)
-        self.text.bind("<BackSpace>", lambda _:'break' if self.text.index(INSERT).split('.')[0] == '1' else None)
+        self.text.bind("<BackSpace>", lambda _:'break' if int(self.text.index(INSERT).split('.')[0]) <=2 else None)
 
         self.text.tag_config('kw',foreground='#D4AF37')
         self.text.tag_config('t',foreground='#702670')
@@ -37,6 +33,7 @@ class App(Tk):
         self.text.tag_config('str',foreground='#329b2f')
         self.text.tag_config('n',foreground='#1E2F97')
         self.text.tag_config('h',foreground='#008000')
+        self.text.tag_config('intervalle',foreground='#A04000')
         self.text.tag_config('f',foreground='#804000')
         self.text.tag_config('label',foreground='#0080ff')
         self.text.tag_config('B',font=('Script MT Bold',12),foreground='#702670')
@@ -74,12 +71,10 @@ class App(Tk):
         self.compile()
         r=(_parser_.parse(self.text.get(3.0,END)))
         print(r)
-    
+            
     def on_change(self,event):
         # Check if the cursor is on the first line
         if int(self.text.index(INSERT).split('.')[0]) <=2:
-            # Enable editing for the first line
-            #self.text.config(state=NORMAL)
             self.text.mark_set(INSERT,END)
             if int(self.text.index(INSERT).split('.')[0]) <=2:
                 self.text.insert(END,'\n')

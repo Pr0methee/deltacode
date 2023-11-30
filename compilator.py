@@ -35,14 +35,14 @@ def compile(text:str):
 
 def colorise(text:str):
     c,l=0,3
-    d={'kw':[],'t':[],'v':[],'str':[],'n':[],'label':[],'B':[],'h':[],'i':[],'f':[]}
-    s,h=False,False
+    d={'kw':[],'t':[],'v':[],'str':[],'n':[],'label':[],'B':[],'h':[],'i':[],'f':[],'intervalle':[]}
+    s,h,i=False,False,False
     mot=''
-    for car in text :
-        #print(car,l)
-        
+    for i in range(len(text)) :
+        car= text[i]
+        if car =='|' and (i+1<len(text) and text[i+1]=='['):
+            i=True
         if car =='\n':
-            print(mot)
             if isfloat(mot.replace(',','.').replace('ι','')):
                 index = 'n'
             elif mot in F:
@@ -56,7 +56,7 @@ def colorise(text:str):
         else:
             c+=1
 
-        if not s and not h :    
+        if not s and not h and not i:    
             if car.isalnum() or car in ',;?!\'':
                 mot+=car
             else:
@@ -74,6 +74,8 @@ def colorise(text:str):
             d['h'].append((l,c))
         elif s:
             d['str'].append((l,c))
+        elif i:
+            d['intervalle'].append((l,c))
         elif car in ('∃','∀','∊','⊆'):
             d['kw'].append((l,c))
             mot=''
@@ -95,8 +97,11 @@ def colorise(text:str):
             mot=''
         elif car == 'ι':
             d['i'].append((l,c))
-            mot=''
-        
+            mot=''         
+            
+        if car =='|' and (0<=i-1 and text[i-1]==']'):
+            i=False
+            
 
 
     

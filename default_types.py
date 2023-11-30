@@ -33,6 +33,9 @@ class N:
         else:
             return type(obj)(self.value)*obj
     
+    def __neg__(self):
+        return Z(-self.value)
+    
     def __sub__(self,obj):
         assert type(obj)in NUMERAL
         if type(obj) == N and obj.value<= self.value:
@@ -125,6 +128,9 @@ class Z:
         else:
             return type(obj)(self.value)*obj
     
+    def __neg__(self):
+        return Z(-self.value)
+    
     def __sub__(self,obj):
         assert type(obj)in NUMERAL
         if type(obj) in (N,Z):
@@ -211,6 +217,9 @@ class R:
         else:
             return type(obj)(self.value)*obj
     
+    def __neg__(self):
+        return R(-self.value)
+    
     def __sub__(self,obj):
         assert type(obj)in NUMERAL
         if type(obj) in (N,Z,R):
@@ -295,6 +304,9 @@ class C:
             return C(obj.value*self.re,obj.value*self.im)
         else:
             return C(self.re*obj.re-self.im*obj.im,self.im*obj.re+self.re*obj.im)
+    
+    def __neg__(self):
+        return C(-self.re,-self.im)
     
     def __sub__(self,obj):
         assert type(obj)in NUMERAL
@@ -381,6 +393,21 @@ class B:
     def recognize(ch):
         return ch in ('⊤','⊥')
 
+    #def __and__(self,obj):
+    #    assert type(obj)==B
+    #    return B(self.v and obj.v)
+
+    #def __or__(self,obj):
+    #    assert type(obj)==B
+    #    return B(self.v or obj.v)
+    
+    #def __not__(self):
+    #    print(1)
+    #    return B(not self.v)
+    
+    def impl(self,obj):
+        assert type(obj)==B
+        return B(not (self.v and not obj.v))
 
     
 class SET:
@@ -430,3 +457,7 @@ class CrossSet:
             if elt not in ("ϩ","ℕ","ℤ","ℝ","ℂ"):
                 return False
         return True
+
+if __name__=='__main__':
+    b1=B(True)
+    b2=B(False)
