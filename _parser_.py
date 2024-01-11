@@ -1,86 +1,84 @@
-kw = '∃∊+-×÷'
-kw2 =[':=']
+kw = '∃∊+-×÷∧∨¬⇔⇒⊆|^≔⩾=⊕⩽∀≠<>:├↦?⇝➣↠'#⟦⟧[]{}
 t=("ϩ","ℕ","ℤ","ℝ","ℂ",'ℬ')
 
-
-def parse_g (ch:str):
-    l=[]
-    ch=ch.replace('\n','')
-    mot=''
+def without_comments(ch:str):
+    r=''
+    c,s=False,False
     for car in ch:
-        if car =='#':
-            if '#' in mot:
-                mot+=car
-                l.append(mot)
-                mot=''
-            else:
-                l.append(mot)
-                mot='#'            
-        else:
-            mot+=car
-    if mot != '':
-        l.append(mot)
-    return l
-
+        if car =='%' and not c and not s:
+            c=True
+        if car =='"':
+            s=not s
+        if not c:
+            r +=car
+        if car=='\n' and c:
+            c=False
+    return r
 
 
 def parse_in_sentences(ch:str):
-    l_=parse_g(ch)
-    l=['']
-    s=False
-    for elt in l_:
-        for car in elt :
-            if car == '"':
-                s=not s
-            if car != '.' or s:
-                l[-1]+=car
-            else:
-                l.append('')
+    #l_=parse_g(ch)
+    #if l_ == 'ERROR':return l_
+    l=[]
+    s=False;sc=0;mot='';a=False
+    for car in ch:
+        if car =='"':s=not s
+        if car =='\\' and not s:sc+=1
+        if car =='/' and not s :sc-=1
 
+        if car =='.' and not s and sc ==0:
+            l.append(mot)
+            mot=''
+        elif car =='\n' and not s and sc==0 :
+            if a :
+                l.append(mot)
+                a=False
+                mot=''
+            continue
+        elif car =='@' and not s and sc ==0:
+            assert mot.replace(' ','') ==''
+            a=True
+            mot='@'
+        else:
+            mot+=car
+    if mot != '' and mot[0]==mot[-1]=='#':
+        l.append(mot)
     while '' in l:
         l.remove('')
     return l
 
 def parse_a_sentence(ch:str):
-    l=['']
-    s=False
-    p=False
-    for i in range(len(ch)):
-        car=ch[i]
-        if p:
-            p=False
-            continue
-
-        if car == '"':
-            s=not s
-
-        if s : 
-            l[-1] += car
-        elif (car in kw and car != '×') or (car == '×' and (l[-1] == '' or l[-1][-1] not in t)): 
-            if not l[-1] =='':
-                l.append('')
-            l[-1] += car
-            l.append('')
-        elif car in [elt[0] for elt in kw2]:
-            if i+1<len(ch) and ch[i:i+2] in kw2:
-                if not l[-1] =='':
-                    l.append('')
-                l[-1] += ch[i:i+2]
-                l.append('')
-                p=True
-        elif car == ' ' and l[-1] != '':
-            l.append('')
-        elif car != ' ':
-            assert car != ' '
-            l[-1] += car
-        
-        
+    if ch[0]=='@' or ch[0]==ch[-1]=='#':return [ch]
+    l=[]
+    mot=''
+    s=False;intervalle=False;SET = 0;sc=0
+    for car in ch:
+        if car =='"':s=not s
+        if car ==' ' and not s:continue
+        if car =='{' and not s:SET +=1
+        if car  == '\\' and not s:sc+=1
+        if (car in kw ) and not s and SET==0 and sc==0:
+            if car == '×' and mot != '' and mot[-1] in t:
+                mot+=car
+                continue
+            if mot !='':
+                l.append(mot)
+                mot=''
+            l.append(car)
+        else:
+            mot +=car
+        if car =='}'and not s:
+            SET -=1
+        if car =='/' and not s : sc-=1
+    if mot != '':l.append(mot)
     return l
+
+
         
 
 def parse(ch:str):
+    ch=without_comments(ch)
     l_=parse_in_sentences(ch)
-    l=[parse_a_sentence(elt) for elt in l_]
-    return l
-
-#parse intervals
+    #print([parse_a_sentence(ch) for ch in l_])
+    return ([parse_a_sentence(ch) for ch in l_])
+#(chr(2080))

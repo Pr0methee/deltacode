@@ -6,7 +6,8 @@ def isfloat(ch:str):
         return True
     except:
         return False
-
+#div euclidienne : '├'
+#necessaire / possible : '⬜'/'⬨'
 table = {
     "\exists ":"∃ ",
     "\in ":"∊ ",
@@ -25,39 +26,99 @@ table = {
     '\div':'÷',
     '\mul':'×',
     '\\to':'↦',
-    '\\P':chr(8472)
+    '\\P':chr(8472),#P tq P(N) désigne l'ensemble des parties de N
+    '\land':'∧',
+    '\lor':'∨',
+    '\\lnot':'¬',
+    '\limpl':'⇒',
+    '\\xor':'⊕',
+    '\equiv':'⇔',
+    '|[':'⟦',
+    ']|':'⟧',
+    '\\nes':'□',
+    '\pos':'◊',
+    ':=':'≔',
+    '\\neq':'≠',
+    '\ge':'⩾',
+    '\le':'⩽',
+    '\Re':"ℜ",
+    '\Im':"ℑ",
+    '\\app':'↠',
+    '\Omega':'Ω',
+    '\\aleph':'ℵ₀',
+    '\eucl':'├',
+    '_0':'₀',
+    '_1':'₁',
+    '_2':'₂',
+    '_3':'₃',
+    '_4':'₄',
+    '_5':'₅',
+    '_6':'₆',
+    '_7':'₇',
+    '_8':'₈',
+    '_9':'₉',
+    '\case':'➣',
+    '\\do':'⇝'
+
 }
 
+"""
+
+→↣⇝
+⇢⇥⇨⇸⇻⇾
+⤀⤁⤍⤏⤐⤑⤔⤕⤖⤗⤘⤞⤠
+⇥
+"""
+
+
+
 def compile(text:str):
-    for k,v in table.items():
+    K = list(table.keys())
+    K=sorted(K,key=len,reverse=True)
+    for k in K:
+        v=table[k]
         text =text.replace(k,v)
     return text
 
 def colorise(text:str):
-    c,l=0,3
-    d={'kw':[],'t':[],'v':[],'str':[],'n':[],'label':[],'B':[],'h':[],'i':[],'f':[],'intervalle':[]}
-    s,h,i=False,False,False
+    c,l=0,2
+    d={'kw':[],'t':[],'v':[],'str':[],'n':[],'label':[],'B':[],'h':[],'i':[],'f':[],'intervalle':[],'@':[],'comm':[]}
+    s,h,iz,ir,hide,com=False,False,False,False,False,False
     mot=''
-    for i in range(len(text)) :
-        car= text[i]
-        if car =='|' and (i+1<len(text) and text[i+1]=='['):
-            i=True
+    for j in range(len(text)) :
+        car= text[j]
+        if car =='%' and not s :
+            com=True
+        if car =='⟦' and not s:
+            iz=True
+        if car  == '[' and not s:
+            ir=True
+        if car == '@' and not s:
+            hide=True
+
+        
         if car =='\n':
-            if isfloat(mot.replace(',','.').replace('ι','')):
-                index = 'n'
-            elif mot in F:
-                index='f'
-            elif mot:
-                index='label'
-            for i,k in enumerate(mot):
-                d[index].append((l,c-len(mot)+i))
+            if hide:
+                hide=False
+            elif com:
+                d['comm'].append((l,c))
+                com=False
+            else:
+                if isfloat(mot.replace(',','.').replace('ι','')):
+                    index = 'n'
+                elif mot in F:
+                    index='f'
+                elif mot:
+                    index='label'
+                for j,k in enumerate(mot):
+                    d[index].append((l,c-len(mot)+j))
             c=0
             l+=1
         else:
             c+=1
 
-        if not s and not h and not i:    
-            if car.isalnum() or car in ',;?!\'':
+        if not s and not h and not iz and not ir and not com:    
+            if car.isalnum():
                 mot+=car
             else:
                 if isfloat(mot.replace(',','.').replace('ι','')):
@@ -66,15 +127,17 @@ def colorise(text:str):
                     index='f'
                 else:
                     index='label'
-                for i,k in enumerate(mot):
-                    d[index].append((l,c-len(mot)+i))
+                for j,k in enumerate(mot):
+                    d[index].append((l,c-len(mot)+j))
                 mot=''
 
         if h:
             d['h'].append((l,c))
         elif s:
             d['str'].append((l,c))
-        elif i:
+        elif com:
+            d['comm'].append((l,c))
+        elif iz or ir:
             d['intervalle'].append((l,c))
         elif car in ('∃','∀','∊','⊆'):
             d['kw'].append((l,c))
@@ -92,15 +155,16 @@ def colorise(text:str):
         elif car =='"':
             s=not s
             d['str'].append((l,c))
-        elif car == 'ℬ':
-            d['B'].append((l,c))
-            mot=''
         elif car == 'ι':
             d['i'].append((l,c))
-            mot=''         
+            mot='' 
+        elif hide:
+            d['@'].append((l,c))        
             
-        if car =='|' and (0<=i-1 and text[i-1]==']'):
-            i=False
+        if car =='⟧' and iz:
+            iz=False
+        if car == ']' and ir:
+            ir=False 
             
 
 
@@ -112,8 +176,8 @@ def colorise(text:str):
         index='f'
     elif mot:
         index='label'
-    for i,k in enumerate(mot):
-        d[index].append((l,c-len(mot)+i))
+    for j,k in enumerate(mot):
+        d[index].append((l,c-len(mot)+j))
     mot=''
     if (l,c) in d['str']:d['str'].remove((l,c))
     return d
