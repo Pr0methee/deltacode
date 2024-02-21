@@ -63,7 +63,7 @@ class N:
             return B(self.value==__value.value)
     
     def __ne__(self, __value: object) -> bool:
-        return not self==__value
+        return B(not (self==__value).v)
     
     def __gt__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
@@ -165,7 +165,7 @@ class Z:
             return B(self.value==__value.value)
     
     def __ne__(self, __value: object) -> bool:
-        return not self==__value
+        return B(not self==__value)
     
     def __gt__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
@@ -273,7 +273,7 @@ class R:
             return B(self.value==__value.value)
     
     def __ne__(self, __value: object) -> bool:
-        return not self==__value
+        return B(not self==__value)
     
     def __gt__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
@@ -322,7 +322,7 @@ class C:
         return self.re+1j*self.im
     
     def recognize(ch):
-        return all([car in '.-0123456789+i' for car in ch])and ch !='' and any([car in '0123456789' for car in ch])
+        return all([car in '.-0123456789+i' for car in ch])and ch !='' and ch.replace('.','').replace('-','').replace('+','') != ''
     
     @classmethod
     def from_str(cls,ch):
@@ -337,6 +337,7 @@ class C:
         if len(l)==1:
             if 'i' in l[0]:
                 l= ['0']+[l[0][:-1]]
+                if l[1]=='':l[1]='1'
             else:
                 l+=['0']
         return cls(float(l[0]),float(l[1]))
@@ -387,12 +388,12 @@ class C:
         if type(__value)not in NUMERAL:
             return B(False)
         if type(__value)!=C:
-            return B(self.re==__value.value and self.im==0)
+            return self.re==__value.value and self.im==0
         else:
-            return B(self.re == __value.re and self.im == __value.im)
+            return self.re == __value.re and self.im == __value.im
     
     def __ne__(self, __value: object) -> bool:
-        return not self==__value
+        return B(not self==__value)
     
     def __hash__(self) -> int:
         return hash(self.__str__())
@@ -447,6 +448,13 @@ class S:
     def __mul__(self,obj):
         assert type(obj)==N
         return S(self.value*obj.value)
+    
+    def __eq__(self, __value: object) -> bool:
+        if type(__value) != S:return B(False)
+        return B(self.value == __value.value)
+    
+    def __ne__(self, __value: object) -> bool:
+        return B( not (self==__value).v)
     
     def __iter__(self):
         self.i=0
@@ -572,6 +580,14 @@ class SET:
     def __hash__(self) -> int:
         return hash(self.__str__())
     
+    def __eq__(self, __value: object) -> bool:
+        return B(id(self)==id(__value))
+    
+    def __ne__(self, __value: object) -> bool:
+        return B(id(self)!=id(__value))
+
+    
+    
     def __iter__(self):
         return iter(self.__l)
 
@@ -657,6 +673,14 @@ class Tuple:
     
     def __next__(self):
         return next(self.v)
+    
+    def __eq__(self, __value: object) -> bool:
+        if type(__value) != Tuple:return B(False)
+        return B(self.v==__value.v)
+    
+    def __ne__(self, __value: object) -> bool:
+        if type(__value) != Tuple:return B(True)
+        return B(self.v!=__value.v)
 
 
 class Parts:
@@ -745,6 +769,7 @@ class EmptySet:
     def from_str(cls,ch):
         assert EmptySet.recognize(ch)
         return cls()
+    
 
 TYPES={"ϩ":S,"ℕ":N,"ℤ":Z,"ℝ":R,"ℂ":C,'ℬ':B}
 TYPES_ = {v:k for k,v in TYPES.items()}
@@ -796,6 +821,7 @@ def type_from_str(ch:str):
     return None
 
 def recognize_type(ch:str):
+    if ch == '':return False
     if ch in TYPES:
         return True
     if ch[0]==chr(8472):

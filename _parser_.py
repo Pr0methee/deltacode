@@ -1,4 +1,4 @@
-kw = '∃∊+-×÷∧∨¬⇔⇒⊆|^≔⩾=⊕⩽∀≠<>:├↦?⇝➣↠'#⟦⟧[]{}
+kw = '∃∊+-×÷∧∨¬⇔⇒⊆|^≔⩾=⊕⩽∀≠<>:├?⇝➣⇴□⟼⟶∄≜'#⟦⟧[]{}
 t=("ϩ","ℕ","ℤ","ℝ","ℂ",'ℬ')
 
 def without_comments(ch:str):
@@ -20,7 +20,7 @@ def parse_in_sentences(ch:str):
     #l_=parse_g(ch)
     #if l_ == 'ERROR':return l_
     l=[]
-    s=False;sc=0;mot='';a=False
+    s=False;sc=0;mot='';a=False#string,sous-code,actual word,arobas ?
     for car in ch:
         if car =='"':s=not s
         if car =='\\' and not s:sc+=1
@@ -79,6 +79,7 @@ def parse_a_sentence(ch:str):
 def parse(ch:str):
     ch=without_comments(ch)
     l_=parse_in_sentences(ch)
+    #print(l_)
     #print([parse_a_sentence(ch) for ch in l_])
     return ([parse_a_sentence(ch) for ch in l_])
 #(chr(2080))

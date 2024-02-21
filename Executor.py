@@ -2,6 +2,7 @@ import tkinter.scrolledtext as scrolledtext
 import _parser_, default_types
 from default_functions import *
 from tkinter import *
+import error
 
 class StdRedirector:
     def __init__(self, text_widget:scrolledtext.ScrolledText):
@@ -39,14 +40,17 @@ class StdRedirector:
 class Executor:
     def __init__(self,echo:scrolledtext.ScrolledText):
         self.VARIABLES = {}
+        self.ALIAS = {}
         self.FUNCTIONS = {}
         self.DICTIONARY = {}
         self.ASSERTS = []
+        self.BOUCLE=False
         self.echo=echo
         self.ECHO=True
     
     def create_variable(self,name,typ,way='∊'):
         if name in self.VARIABLES:
+            raise error.AlreadyExistsError(name)
             self.raise_error("AlreadyExistsError",f"Variable {name} already exists, We can't create it again.")
             return
         
@@ -64,9 +68,13 @@ class Executor:
         self.echo_dec(name,typ,way)
 
     def affect(self,name,expr:list[str]):
-        if name not in self.VARIABLES:
+        if name not in self.VARIABLES and name not in self.ALIAS:
             self.raise_error("NameError",f"Unable to affect value to {name}, it does not exist.")
             return
+        
+        if name in self.ALIAS:
+            name=self.ALIAS[name]
+
         value = self.eval_expr(expr.copy())
         if type(value)==str :
             if value == 'err':
@@ -96,6 +104,25 @@ class Executor:
         self.echo_affect(name,value)
         self.VARIABLES[name][1]=value
     
+    def suppr_var(self,var):
+        if var not in self.VARIABLES:
+            self.raise_error("UnknownVariable",f"Unable to destroy variable {var}, it does not exist.")
+            return
+        
+        del self.VARIABLES[var]
+        self.echo_del(var)
+
+    def create_alias(self,name,ref):
+        if name in self.VARIABLES or name in self.ALIAS:
+            raise error.AlreadyExistsError(name)
+        if ref not in self.VARIABLES and ref not in self.ALIAS:
+            raise error.UnknownObject(ref)
+        
+        if ref in self.ALIAS:
+            self.ALIAS[name] = self.ALIAS[ref]
+        else:
+            self.ALIAS[name]=ref
+
     def execute(self,txt:str,flag=True):#,echoflag=True):
         self.text=txt
         self.parsed = _parser_.parse(txt)
@@ -111,12 +138,26 @@ class Executor:
         self.STOP =False
         self.l=1
         if flag:self.echo_inf("==COMMENCEMENT D'EXECUTION==")
+        self.echo.bind_all('<Control-c>',self.raise_end)
         for ph in self.parsed:
             try:
-                self.exec(ph)
-            except AssertionError:
+                h =self.exec(ph)
+            except Exception as err:
                 self.STOP=True
-                self.raise_error("SyntaxError",f"Invalid Syntax at line {self.l}")
+                if 'name' in dir(err):
+                    if err==error.Halt and self.BOUCLE:
+                        self.BOUCLE=False
+                        return
+                    self.raise_error(err.name(),str(err))
+                else:
+                    raise err
+            if h == error.Halt:
+                if self.BOUCLE:
+                    self.BOUCLE=False
+                    return
+                else:
+                    err=error.Halt()
+                    self.raise_error(err.name(),str(err))
             if self.STOP:break
             self.l+=1
             self.echo.update()
@@ -126,25 +167,91 @@ class Executor:
         sys.stdin=defstdin
 
         if flag:
-            print('Variables :\n',self.VARIABLES,'\nDictionnaire :\n',self.DICTIONARY)
+            print('Variables :\n',self.VARIABLES,'\nDictionnaire :\n',self.DICTIONARY,'\nBOUCLE :',self.BOUCLE)
             self.echo_inf("==FIN D'EXECUTION==")
+        
+        self.echo.unbind_all('<Control-c>')
         return self.STOP
+
+    def raise_end(self,evt):
+        #raise error.EndError()
+        #raise error.Halt
+        self.STOP=True
+        self.raise_error("Keyboard Interupt",'')
 
     def exec(self,ph):
         if ph[0] == '∃':
-            assert( ph[2] == '∊' or ph[2]=='⊆' )and len(ph)==4
+            if not (( ph[2] == '∊' or ph[2]=='⊆' )and len(ph)==4):
+                raise error.WrongSyntax()
+            #assert( ph[2] == '∊' or ph[2]=='⊆' )and len(ph)==4
             self.create_variable(ph[1],ph[3],ph[2])
+        elif len(ph)>=2 and  ph[1] == '≜':
+            if len(ph) != 3:raise error.WrongSyntax()
+            self.create_alias(ph[0],ph[2])
+        elif ph[0] == '∄':
+            if  len(ph)!=2 :raise error.WrongSyntax()
+            self.suppr_var(ph[1])
+
         elif len(ph) >=2 and ph[1]=='≔':
-            assert ph[0] in self.VARIABLES
-            self.affect(ph[0],ph[2:])
+            if '$' in ph[0]:
+                self.dict_affect(ph)
+            else:
+                self.affect(ph[0],ph[2:])
         elif '@' == ph[0][0]:
-            assert ph[0] == '@hide'
-            self.ECHO=False
+            if len(ph) != 1 : raise error.WrongSyntax()
+            order = ph[0][1:]
+            if order == 'hide':
+                self.ECHO=False
+            elif order == 'show':
+                self.ECHO = True
+            elif order == 'HALT':
+                return error.Halt
+            elif len(order.split(' ')) ==2 and order.split(' ')[0]=='use':
+                m = ModuleExecutor(order.split(' ')[1],self.echo)
+                r = m.exec()
+                for k,v in r[0].items():
+                    if k in self.VARIABLES:
+                        raise error.OverWritingWarning(k)
+                    elif k in self.ALIAS:
+                        del self.ALIAS[k]
+                        raise error.OverWritingWarning(k)
+                    elif k in self.DICTIONARY:
+                        del self.DICTIONARY[k]
+                        raise error.OverWritingWarning(k)
+                    self.VARIABLES[k]=v
+
+                for k,v in r[1].items():
+                    if k in self.VARIABLES:
+                        del self.VARIABLES[k]
+                        raise error.OverWritingWarning(k)
+                    elif k in self.ALIAS:
+                        del self.ALIAS[k]
+                        raise error.OverWritingWarning(k)
+                    elif k in self.DICTIONARY:
+                        #del self.DICTIONARY[k]
+                        raise error.OverWritingWarning(k)
+                    self.DICTIONARY[k]=v
+
+                for k,v in r[2].items():
+                    if k in self.VARIABLES:
+                        del self.VARIABLES[k]
+                        raise error.OverWritingWarning(k)
+                    elif k in self.ALIAS:
+                        #del self.ALIAS[k]
+                        raise error.OverWritingWarning(k)
+                    elif k in self.DICTIONARY:
+                        del self.DICTIONARY[k]
+                        raise error.OverWritingWarning(k)
+                    self.ALIAS[k]=v
+            else:
+                raise error.UnknownObject(ph[0])
         elif '□' == ph[0]:
-            self.ASSERTS.append(ph[1:])
+            if ph[1:] not in self.ASSERTS:self.ASSERTS.append(ph[1:])
+        elif '¬' == ph[0] and ph[1]=='□':
+            if ph[2:] in self.ASSERTS:self.ASSERTS.remove(ph[2:])
         elif ph[0]=='∀':
             self.for_all_ex(ph)
-        elif '↠' in ph:
+        elif '⇴' in ph:
             self.dict_ex(ph)
         elif '➣' == ph[0]:
             self.if_ex(ph)
@@ -153,10 +260,12 @@ class Executor:
         
         for tests in self.ASSERTS:
             res = self.eval_expr(tests)
+            print(res)
             if type(res) != default_types.B and type(res) != type(None):
                 raise TypeError
             if type(res)==default_types.B and res.equiv(default_types.B(True)).v ==False:
-                self.raise_error("AssertionError",f"The assertion '{''.join(tests)}' has failled. ")
+                #self.raise_error("AssertionError",f"The assertion '{''.join(tests)}' has failled. ")
+                raise error.WrongAssertion(tests)
 
     def raise_error(self,err,mes):
         self.STOP =True
@@ -168,6 +277,12 @@ class Executor:
         if not self.ECHO:return
         self.echo.config(state='normal')
         self.echo.insert('end',f"Variable {name} created with type {typ if way =='∊' else chr(8472)+'('+str(typ)+')' }\n",'dec')
+        self.echo.config(state='disabled')
+
+    def echo_del(self,name):
+        if not self.ECHO:return
+        self.echo.config(state='normal')
+        self.echo.insert('end',f"Variable {name} has been destroyed successfully\n",'dec')
         self.echo.config(state='disabled')
     
     def echo_affect(self,name,value):
@@ -191,21 +306,23 @@ class Executor:
                 l_.append(res)
             else:
                 l_.append(elt)
+
+
         if len(l_) == 1 and type(l_[0]) != str:
             return l_[0]
         
         if len(l)==1 and l[0][0]=='{' and l[0][-1]=='}':
-            #try:   
-                res=evaluate_sets(l[0],self.VARIABLES,self.DICTIONARY)#,self.FUNCTIONS)
+            try:   
+                res=evaluate_sets(l[0],self.VARIABLES,self.DICTIONARY,self.ALIAS)#,self.FUNCTIONS)
                 return res
-            #except Exception as err:
-            #    print(err)
-            #    return 'err'
+            except Exception as err:
+                print(err)
+                return 'err'
         else:
             l_=create_evaluating_list(l)
             typize(l_)
             try:
-                res=evaluate(l_,self.VARIABLES,self.DICTIONARY)#,stdout=StdRedirector(self.echo))
+                res=evaluate(l_,self.VARIABLES,self.DICTIONARY,self.ALIAS)#,stdout=StdRedirector(self.echo))
                 return res
             except ZeroDivisionError:
                 return '0err'
@@ -242,12 +359,21 @@ class Executor:
         assert len(code[5])>2 and code[5][0]=='\\' and code[5][-1]=='/'
         run_code= code[5][1:-1]
         #run_code = _parser_.parse(run_code)
+        self.BOUCLE=True
         for i in Ens:
+            assert self.BOUCLE
             self.VARIABLES[code[1]][1]=i
-            res = self.execute(run_code,flag=False)#,echoflag=self.ECHO)
+
+            try:
+                res = self.execute(run_code,flag=False)#,echoflag=self.ECHO)
+            except error.Halt:
+                res=True
+            if res == None or not self.BOUCLE:return 
             if res :
                 self.STOP=True
+                self.BOUCLE=False
                 return
+        
     
     def if_ex(self,code):
         expr=[]
@@ -266,6 +392,9 @@ class Executor:
                     assert elt[0]=='\\' and elt[-1]=='/'
                     run_code = elt[1:-1]
                     res = self.execute(run_code,flag=False)#,echoflag=self.ECHO)
+                    if res == error.Halt:
+                        #return error.Halt
+                        raise error.Halt
                     if res :
                         self.STOP=True
                     return
@@ -278,40 +407,12 @@ class Executor:
 
             i+=1
 
-
-        """for elt in code[1:]:
-            if elt == '⇝'"""
-
     def dict_ex(self,code):
         """Créer un dictionaire"""
         name = code[0]
-        if name in self.DICTIONARY:
-            assert code[1]==':'
-            assert code[3]=='↠'
-            assert code[5:]==[]
-            try:
-                key = code[2]
-                if key in self.VARIABLES :
-                    key = self.VARIABLES[key][1]
-                else:
-                    key = default_types.attribute_type(key)
-                key  = convert(key,self.DICTIONARY[name][0][0])
-
-                value = code[4]
-                if value in self.VARIABLES:
-                    value = self.VARIABLES[value][1]
-                else:
-                    value = default_types.attribute_type(value)
-                value  = convert(value,self.DICTIONARY[name][0][1])
-            except:
-                self.raise_error("TypeError",'')
-                return
-            self.DICTIONARY[name][1][key]=value
-            return
-
         assert code[1]==':'
         t1 = code[2]
-        assert code[3]=='↠'
+        assert code[3]=='⇴'
         t2 =code[4]
         assert code[5:]==[]
         assert name not in self.VARIABLES and name not in self.DICTIONARY and name not in self.FUNCTIONS
@@ -319,8 +420,41 @@ class Executor:
         t1,t2 = default_types.type_from_str(t1),default_types.type_from_str(t2)
         self.DICTIONARY[name]=[(t1,t2),{}]
 
+    def dict_affect(self,code):
+        assert code[1] == '≔'
+        obj = code[0]
+        assert obj.count('$')==1
+        obj = obj.split('$')
+        if obj[0] not in self.DICTIONARY:
+            self.raise_error("NameError",f"Unable to affect value to {obj[0]}, it does not exist.")
+            return 
+        
+        k = default_types.attribute_type(obj[1])
+        k =convert(k,self.DICTIONARY[obj[0]][0][0])
+        v = self.eval_expr(code[2:])
+        v = convert(v,self.DICTIONARY[obj[0]][0][1])
+
+        self.DICTIONARY[obj[0]][1][k]=v
+    
+    def create_function(self,code):
+        assert len(code)== 5
+        assert code[0] not in self.VARIABLES and code[0] not in self.FUNCTIONS
+        assert code[1]==':' and code[3]== '⟶'
+        assert default_types.recognize_type(code[2]) and default_types.recognize_type(code[4])
+
+        self.FUNCTIONS[code[0]] = default_types.Function(self,code[2],code[4])
 
 
+class ModuleExecutor:
+    def __init__(self,path,echo) -> None:
+        self.path=path+'.e'
+        self.echo=echo
+    
+    def exec(self):
+        with open(self.path,'rb') as f:
+            ex=Executor(self.echo)
+            ex.execute(f.read().decode('utf-8'),False)
+        return (ex.VARIABLES,ex.DICTIONARY,ex.ALIAS)
 
 
 def create_evaluating_list(expr:list):
@@ -354,15 +488,18 @@ def typize(l:list):
             if type(r) != type(None):
                 l[i]=r
 
-def evaluate(l:list,variables,dictionary,k=0):#,stdout=sys.__stdout__):
+def evaluate(l:list,variables,dictionary,alias,k=0):#,stdout=sys.__stdout__):
     simpl(l)
     assert type(k)==int
     for i,elt in enumerate(l):
+        #print(elt)
         if type(elt)==list:
-            evaluate(elt,variables,k+1)
+            evaluate(elt,variables,dictionary,alias,k+1)
             if len(l[i])==1:l[i]=l[i][0]
         elif type(elt)==str and elt in variables:
             l[i] = variables[elt][1]
+        elif type(elt)==str and elt in alias:
+            l[i] = variables[alias[elt]][1]
         elif type(elt)==str and elt[0]=='{' and elt[-1]=='}':
             l[i]=evaluate_sets(elt,variables,dictionary)
         elif type(elt) == str and elt not in "∃∊+-×÷∧∨⊕¬⇔⇒⊆|^⟦⟧≔⩾=⩽≠<>;":
@@ -412,7 +549,7 @@ def evaluate(l:list,variables,dictionary,k=0):#,stdout=sys.__stdout__):
     traiter(l,'<',lambda b1,b2 : b1 < b2)
     traiter(l,'=',lambda b1,b2 : b1 == b2)
     traiter(l,'≠',lambda b1,b2 : b1 != b2)
-    traiter(l,'∊',lambda b1,b2 : IN(b1,b2))
+    #traiter(l,'∊',lambda b1,b2 : IN(b1,b2))
     traiter(l,'∧',lambda b1,b2:b1 and b2)
     traiter(l,'∨',lambda b1,b2:b1 or b2)
     traiter(l,'⊕',lambda b1,b2:b1.xor(b2))
@@ -530,13 +667,13 @@ def simpl(l:list):
                 del l[i-1]
                 del l[i-1]
 
-def evaluate_sets(ch,variables,dictionary):
+def evaluate_sets(ch,variables,dictionary,alias):
     s=set()
     for elt in default_types.SET.listify(ch):
         l_elt = _parser_.parse_a_sentence(elt)
         eval_l = create_evaluating_list(l_elt)
         typize(eval_l)
-        res = evaluate(eval_l,variables,dictionary)
+        res = evaluate(eval_l,variables,dictionary,alias)
         s.add(res)
 
     t = {type(elt) for elt in s}
@@ -597,11 +734,14 @@ def exec_func_dict(ch:str,variables,dictionary):#,stdout):
         return dictionary[f][1][l_[0]]
     
     l_=[]
+    #print(a)
     for elt in a[1:-1].split(','):
         if default_types.recognize_type(elt):
             l_.append('"'+elt+'"')
         elif elt in variables:
             l_.append(f"variables['{elt}'][1]") 
+        elif elt=='':
+            continue
         else:
             raise
     

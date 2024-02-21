@@ -3,7 +3,6 @@ import sys
 
 DEFAULT_FUNCTIONS = {"card","echo","ask","convert"}
 
-class AssertionError_(Exception):pass
 
 def card(l):
     return len(l)

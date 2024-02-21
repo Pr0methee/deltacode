@@ -25,7 +25,9 @@ table = {
     "\i":'ι',
     '\div':'÷',
     '\mul':'×',
-    '\\to':'↦',
+    '\\mapsto':'⟼',
+    '\\to':'⟶',
+    '\\nexists':'∄',
     '\\P':chr(8472),#P tq P(N) désigne l'ensemble des parties de N
     '\land':'∧',
     '\lor':'∨',
@@ -43,10 +45,9 @@ table = {
     '\le':'⩽',
     '\Re':"ℜ",
     '\Im':"ℑ",
-    '\\app':'↠',
+    '\\app':'⇴',
     '\Omega':'Ω',
     '\\aleph':'ℵ₀',
-    '\eucl':'├',
     '_0':'₀',
     '_1':'₁',
     '_2':'₂',
@@ -58,17 +59,11 @@ table = {
     '_8':'₈',
     '_9':'₉',
     '\case':'➣',
-    '\\do':'⇝'
+    '\\do':'⇝',
+    '\\alias':'≜'
 
 }
 
-"""
-
-→↣⇝
-⇢⇥⇨⇸⇻⇾
-⤀⤁⤍⤏⤐⤑⤔⤕⤖⤗⤘⤞⤠
-⇥
-"""
 
 
 
@@ -139,7 +134,7 @@ def colorise(text:str):
             d['comm'].append((l,c))
         elif iz or ir:
             d['intervalle'].append((l,c))
-        elif car in ('∃','∀','∊','⊆'):
+        elif car in ('∃','∀','∊','⊆','≔','⇝','➣','□','∄','≜'):
             d['kw'].append((l,c))
             mot=''
         elif car in ("ϩ","ℕ","ℤ","ℝ","ℂ",'ℬ'):
