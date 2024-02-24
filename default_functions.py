@@ -1,5 +1,5 @@
 import default_types #import *
-import sys
+import sys,error
 
 DEFAULT_FUNCTIONS = {"card","echo","ask","convert"}
 
@@ -44,7 +44,8 @@ def convert(obj,typ):
         return r
     
     if type(typ)!=default_types.CrossSet:
-        assert typ in default_types.INCLUSIONS[type(obj)]
+        if type(obj) not in default_types.INCLUSIONS:raise error.ConvertionError
+        if not typ in default_types.INCLUSIONS[type(obj)]:raise error.ConvertionError
         return typ(obj.value)
     
     assert type(obj)==default_types.Tuple 

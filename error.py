@@ -7,6 +7,13 @@ class WrongAssertion(Exception):
 
 class DividingByZero(Exception):pass
 
+class ConvertionError(Exception):
+    def __init__(self):
+        super().__init__(f"Incorrect convertion ")
+    
+    def name(self):
+        return "ConvertionError : "
+    
 class UnknownObject(Exception):
     def __init__(self,t):
         super().__init__(f"I don't know object '{t}' ")

@@ -45,7 +45,7 @@ table = {
     '\le':'⩽',
     '\Re':"ℜ",
     '\Im':"ℑ",
-    '\\app':'⇴',
+    '\\dict':'⇴',
     '\Omega':'Ω',
     '\\aleph':'ℵ₀',
     '_0':'₀',
@@ -60,8 +60,10 @@ table = {
     '_9':'₉',
     '\case':'➣',
     '\\do':'⇝',
-    '\\alias':'≜'
-
+    '\\alias':'≜',
+    "\inter":"⋂",
+    "\\union":"⋃"
+#⦅⦆,⧼⧽,⟨⟩ 
 }
 
 
@@ -86,8 +88,8 @@ def colorise(text:str):
             com=True
         if car =='⟦' and not s:
             iz=True
-        if car  == '[' and not s:
-            ir=True
+        #if car  == '[' and not s:
+        #    ir=True
         if car == '@' and not s:
             hide=True
 
@@ -158,8 +160,8 @@ def colorise(text:str):
             
         if car =='⟧' and iz:
             iz=False
-        if car == ']' and ir:
-            ir=False 
+        #if car == ']' and ir:
+        #    ir=False 
             
 
 

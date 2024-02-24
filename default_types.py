@@ -1,4 +1,5 @@
 import math
+import default_functions
 
 class N:
     def __init__(self,v):
@@ -521,12 +522,12 @@ class SET:
         if type(self.type) ==CrossSet:
             #print(type(v.type)==type(self.type) and str(v.type)==str(self.type),v.type,self.type)
             assert type(v)==Tuple and v.type==self.type
-        elif type(v) != self.type and (self.type not in INCLUSIONS.get(type(v),[])) and (type(v)==str and not self.type.recognize(v)):
+        elif type(v) != self.type and (not include(type(v),self.type)):
             raise
         if type(v)==str:
             self.__l.add(self.type.from_str(v))
         else:
-            self.__l.add(v)
+            self.__l.add(default_functions.convert(v,self.type))
     
     def listify(ch):
         assert ch[0] == '{' and ch[-1]=='}'
@@ -559,6 +560,44 @@ class SET:
             if (type(typ)==CrossSet and not Tuple.recognize(elt,typ)) or (type(typ)!=CrossSet and not typ.recognize(elt)):return False
         
         return True
+
+    def union(self,__o):
+        if type(__o) != SET:raise
+        if self.type == __o.type or include(__o.type,self.type):
+            s=SET(self.type)
+            for elt in self:
+                s.add(elt)
+            for elt in __o:
+                s.add(elt)
+        elif include(self.type,__o.type):
+            s=SET(__o.type)
+            for elt in self:
+                s.add(elt)
+            for elt in __o:
+                s.add(elt)
+        else:
+            raise
+        return s
+
+    def inter (self,__o):
+        if type(__o) != SET:raise
+        if self.type == __o.type or include(__o.type,self.type):
+            s=SET(self.type)
+            for elt in self:
+                for thing in __o:
+                    if (thing == elt).v:
+                        s.add(elt)
+                        break
+        elif include(self.type,__o.type):
+            s=SET(__o.type)
+            for elt in self:
+                for thing in __o:
+                    if (thing == elt).v:
+                        s.add(elt)
+                        break
+        else:
+            raise
+        return s
 
         
     
@@ -605,6 +644,10 @@ class CrossSet:
         for elt in split_tup(ch):
             t.append(type_from_str(elt))
         return cls(*t)
+    
+    def __getitem__(self,i):
+        print(self.schema)
+        return self.schema[i]
 
     def recognize_type(ch):
         if '×' not in ch:return False

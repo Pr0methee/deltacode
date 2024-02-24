@@ -1,13 +1,9 @@
-∃ e ∊ ℝ.
+sum : ℝ×ℝ ⟶ ℝ.
+sum : x;y ⟼ x+y.
 
-@hide
-∃ ch ∊ ϩ.
+∃ k₁ ∊ ℝ.
+∃ k₂ ∊ ℝ.
 
-f : ℤ ↠ ϩ.
-∀ i ∊ ⟦0;10⟧ : \
-ch ≔ convert$i$ϩ.
-f : i ↠ ch.
-/.
-
-ch ≔ f$2.
-echo$ch.
+k₁ ≔ 1.
+k₂ ≔2.
+sum$k₁$k₂.
