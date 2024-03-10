@@ -1,11 +1,12 @@
-import tkinter.scrolledtext as scrolledtext
-import _parser_, default_types, evaluations,Functions
-from default_functions import *
-from tkinter import *
-import error
+from tkinter.scrolledtext import ScrolledText #as scrolledtext.Scrolledtext
+import _parser_, default_types, evaluations,Functions,error,time
+from default_functions import convert
+import sys
+from tkinter import END
+
 
 class StdRedirector:
-    def __init__(self, text_widget:scrolledtext.ScrolledText):
+    def __init__(self, text_widget:ScrolledText):
         self.text_widget = text_widget
 
     def write(self, message):#enlever le disabled
@@ -36,7 +37,7 @@ class StdRedirector:
         return l
 
 class Executor:
-    def __init__(self,echo:scrolledtext.ScrolledText):
+    def __init__(self,echo:ScrolledText):
         self.VARIABLES = {}
         self.ALIAS = {}
         self.FUNCTIONS = {}
@@ -49,15 +50,12 @@ class Executor:
     def create_variable(self,name,typ,way='∊'):
         if name in self.VARIABLES:
             raise error.AlreadyExistsError(name)
-            self.raise_error("AlreadyExistsError",f"Variable {name} already exists, We can't create it again.")
-            return
         
         if not(default_types.recognize_type(typ)):
-            self.raise_error("TypeError", f"{typ} can't be understood as a type.")
-            return
+            raise error.TypeError(typ)
+
         if not valid_name(name):
-            self.raise_error('InvalidNameError', f"Invalid name for a variable {name}")
-            return
+            raise error.InvalidName(name)
 
         if way =='∊':
             self.VARIABLES[name]=[default_types.type_from_str(typ),None]
@@ -67,8 +65,7 @@ class Executor:
 
     def affect(self,name,expr:list[str]):
         if name not in self.VARIABLES and name not in self.ALIAS:
-            self.raise_error("NameError",f"Unable to affect value to {name}, it does not exist.")
-            return
+            raise error.NameError(name)
         
         if name in self.ALIAS:
             name=self.ALIAS[name]
@@ -136,8 +133,9 @@ class Executor:
         self.STOP =False
         self.l=1
         if flag:self.echo_inf("==COMMENCEMENT D'EXECUTION==")
+        t=time.time()
         self.echo.bind_all('<Control-c>',self.raise_end)
-        for ph in self.parsed:
+        for i,ph in enumerate(self.parsed):
             try:
                 h =self.exec(ph)
             except Exception as err:
@@ -157,7 +155,13 @@ class Executor:
                     else:
                         err=error.Halt()
                         self.raise_error(err.name(),str(err))
-            except:pass
+                if h == error.EOI:
+                    return error.EOI
+
+            except NameError:
+                h=None
+            if h != None:
+                return h
             if self.STOP:break
             self.l+=1
             self.echo.update()
@@ -167,8 +171,8 @@ class Executor:
         sys.stdin=defstdin
 
         if flag:
-            print('Variables :\n',self.VARIABLES,'\nDictionnaire :\n',self.DICTIONARY,'\Fonctions :\n',self.FUNCTIONS,'\nAlias :\n',self.ALIAS,'\nBOUCLE :',self.BOUCLE)
-            self.echo_inf("==FIN D'EXECUTION==")
+            print('Variables :\n',self.VARIABLES,'\nDictionnaire :\n',self.DICTIONARY,'\nFonctions :\n',self.FUNCTIONS,'\nAlias :\n',self.ALIAS,'\nBOUCLE :',self.BOUCLE)
+            self.echo_inf("==FIN D'EXECUTION=="+str(time.time()-t))
         
         self.echo.unbind_all('<Control-c>')
         return self.STOP
@@ -180,100 +184,92 @@ class Executor:
         self.raise_error("Keyboard Interupt",'')
 
     def exec(self,ph):
-        #match ph:
-        #    case ['∃',name, ('∊' | '⊆') as way,typ]:
-        #        self.create_variable(name,typ,way)
+        match ph:
+            case ['∃',name, ('∊' | '⊆') as way,typ]:
+               self.create_variable(name,typ,way)
+            case [v1, '≜', v2]:
+               self.create_alias(v1,v2)
+            case ['∄',var]:
+               self.suppr_var(var)
+            case [thing,'≔',*r]:
+                if '$' in thing:
+                   self.dict_affect(ph)
+                else:
+                   self.affect(thing,r)
+            case [thing] if thing != '' and thing[0]=='@':
+                match thing[1:].split(' '):
+                    case ['HIDE']: self.ECHO = False
+                    case ['SHOW']: self.ECHO=True
+                    case ['HALT']: return error.Halt
+                    case ['CONTINUE']: return error.EOI
+                    case ['WAIT']: time.sleep(3e-3)
+                    case ['BELL']: self.echo.bell()
+                    case ['USE',name]:
+                        m = ModuleExecutor(name,self.echo)
+                        r = m.exec()
+                        for k,v in r[0].items():
+                            if k in self.VARIABLES:
+                                raise error.OverWritingWarning(k)
+                            elif k in self.ALIAS:
+                                del self.ALIAS[k]
+                                raise error.OverWritingWarning(k)
+                            elif k in self.DICTIONARY:
+                                del self.DICTIONARY[k]
+                                raise error.OverWritingWarning(k)
+                            self.VARIABLES[k]=v
+
+                        for k,v in r[1].items():
+                            if k in self.VARIABLES:
+                                del self.VARIABLES[k]
+                                raise error.OverWritingWarning(k)
+                            elif k in self.ALIAS:
+                                del self.ALIAS[k]
+                                raise error.OverWritingWarning(k)
+                            elif k in self.DICTIONARY:
+                                #del self.DICTIONARY[k]
+                                raise error.OverWritingWarning(k)
+                            self.DICTIONARY[k]=v
+
+                        for k,v in r[2].items():
+                            if k in self.VARIABLES:
+                                del self.VARIABLES[k]
+                                raise error.OverWritingWarning(k)
+                            elif k in self.ALIAS:
+                                #del self.ALIAS[k]
+                                raise error.OverWritingWarning(k)
+                            elif k in self.DICTIONARY:
+                                del self.DICTIONARY[k]
+                                raise error.OverWritingWarning(k)
+                            self.ALIAS[k]=v
+                    case _:raise error.UnknownObject(ph[0])
+            case ['□',*expr]:
+                if expr not in self.ASSERTS:self.ASSERTS.append(expr)
+            case ['¬','□',*expr]:
+                if expr in self.ASSERTS:
+                    self.ASSERTS.remove(expr)
+            case ['∀',*code]:self.for_all_ex(ph)
+            case [nom,':',typ1,'⇴',typ2]:
+                self.dict_ex(nom,typ1,typ2)#refaire
+            case ['➣',*code]:
+                r=self.if_ex(ph)
+                if r == error.EOI:return r
+            case [nom,':',t1,'⟶',t2]:
+                assert default_types.recognize_type(t1)
+                assert default_types.recognize_type(t2)
+                assert nom not in self.VARIABLES
+                assert nom not in self.DICTIONARY
+                assert nom not in self.ALIAS
+                assert nom not in self.FUNCTIONS
+                self.FUNCTIONS[nom]=Functions.Applications(nom,t1,t2)
+            case [nom,':',vars,'⟼',return_]:
+                if nom not in self.FUNCTIONS:raise
+                f:Functions.Applications = self.FUNCTIONS[nom]
+                f.set_args_name(*vars.split(';'))
+                f.set_expr(return_)
+            case _:
+                assert all([elt not in _parser_.kw for elt in ph])
+                self.eval_expr(ph)
         
-        if ph[0] == '∃':
-            if not (( ph[2] == '∊' or ph[2]=='⊆' )and len(ph)==4):
-                raise error.WrongSyntax()
-            #assert( ph[2] == '∊' or ph[2]=='⊆' )and len(ph)==4
-            self.create_variable(ph[1],ph[3],ph[2])
-        elif len(ph)>=2 and  ph[1] == '≜':
-            if len(ph) != 3:raise error.WrongSyntax()
-            self.create_alias(ph[0],ph[2])
-        elif ph[0] == '∄':
-            if  len(ph)!=2 :raise error.WrongSyntax()
-            self.suppr_var(ph[1])
-
-        elif len(ph) >=2 and ph[1]=='≔':
-            if '$' in ph[0]:
-                self.dict_affect(ph)
-            else:
-                self.affect(ph[0],ph[2:])
-        elif '@' == ph[0][0]:
-            if len(ph) != 1 : raise error.WrongSyntax()
-            order = ph[0][1:]
-            if order == 'hide':
-                self.ECHO=False
-            elif order == 'show':
-                self.ECHO = True
-            elif order == 'HALT':
-                return error.Halt
-            elif len(order.split(' ')) ==2 and order.split(' ')[0]=='use':
-                m = ModuleExecutor(order.split(' ')[1],self.echo)
-                r = m.exec()
-                for k,v in r[0].items():
-                    if k in self.VARIABLES:
-                        raise error.OverWritingWarning(k)
-                    elif k in self.ALIAS:
-                        del self.ALIAS[k]
-                        raise error.OverWritingWarning(k)
-                    elif k in self.DICTIONARY:
-                        del self.DICTIONARY[k]
-                        raise error.OverWritingWarning(k)
-                    self.VARIABLES[k]=v
-
-                for k,v in r[1].items():
-                    if k in self.VARIABLES:
-                        del self.VARIABLES[k]
-                        raise error.OverWritingWarning(k)
-                    elif k in self.ALIAS:
-                        del self.ALIAS[k]
-                        raise error.OverWritingWarning(k)
-                    elif k in self.DICTIONARY:
-                        #del self.DICTIONARY[k]
-                        raise error.OverWritingWarning(k)
-                    self.DICTIONARY[k]=v
-
-                for k,v in r[2].items():
-                    if k in self.VARIABLES:
-                        del self.VARIABLES[k]
-                        raise error.OverWritingWarning(k)
-                    elif k in self.ALIAS:
-                        #del self.ALIAS[k]
-                        raise error.OverWritingWarning(k)
-                    elif k in self.DICTIONARY:
-                        del self.DICTIONARY[k]
-                        raise error.OverWritingWarning(k)
-                    self.ALIAS[k]=v
-            else:
-                raise error.UnknownObject(ph[0])
-        elif '□' == ph[0]:
-            if ph[1:] not in self.ASSERTS:self.ASSERTS.append(ph[1:])
-        elif '¬' == ph[0] and ph[1]=='□':
-            if ph[2:] in self.ASSERTS:self.ASSERTS.remove(ph[2:])
-        elif ph[0]=='∀':
-            self.for_all_ex(ph)
-        elif '⇴' in ph:
-            self.dict_ex(ph)
-        elif '➣' == ph[0]:
-            self.if_ex(ph)
-        elif len(ph) == 5 and ph[1]==':' and ph[3]=='⟶':
-            assert default_types.recognize_type(ph[2])
-            assert default_types.recognize_type(ph[4])
-            assert ph[0] not in self.VARIABLES
-            assert ph[0] not in self.DICTIONARY
-            assert ph[0] not in self.ALIAS
-            assert ph[0] not in self.FUNCTIONS
-            self.FUNCTIONS[ph[0]]=Functions.Applications(ph[0],ph[2],ph[4])
-        elif len(ph) >= 5 and ph[1]==':' and ph[3] == '⟼':
-            if ph[0] not in self.FUNCTIONS:raise
-            f:Functions.Applications = self.FUNCTIONS[ph[0]]
-            f.set_args_name(*ph[2].split(';'))
-            f.set_expr(ph[4:])
-        else:
-            self.eval_expr(ph)
         
         for tests in self.ASSERTS:
             res = self.eval_expr(tests)
@@ -342,12 +338,9 @@ class Executor:
                 return res
             except ZeroDivisionError:
                 return '0err'
-            #except Exception as err:
-            #    print(err)
     
     def for_all_ex(self,code):
         assert len(code)==6 and code[2]=='∊' and code[4]==':'
-        #print(stringify(self.VARIABLES[code[3]][0]),default_types.S)
         if not default_types.ZIntervalle.recognize(code[3]) and code[3] != 'ℕ' and not (code[3] in self.VARIABLES and (type(self.VARIABLES[code[3]][0]) in (default_types.Parts,) or self.VARIABLES[code[3]][0]==default_types.S)):raise
         
         if code[3] == 'ℕ':
@@ -381,16 +374,18 @@ class Executor:
             self.VARIABLES[code[1]][1]=i
 
             try:
-                res = self.execute(run_code,flag=False)#,echoflag=self.ECHO)
+                res = self.execute(run_code,flag=False)
             except error.Halt:
                 res=True
+            except error.EOI:continue
+            if res ==error.EOI:
+                continue
             if res == None or not self.BOUCLE:return 
             if res :
                 self.STOP=True
                 self.BOUCLE=False
                 return
-        
-    
+            
     def if_ex(self,code):
         expr=[]
         assert code[0]=='➣'
@@ -404,13 +399,13 @@ class Executor:
                 res =self.eval_expr(expr)
                 if type(res) != default_types.B:raise
                 if res.v :
-                    #execute
                     assert elt[0]=='\\' and elt[-1]=='/'
                     run_code = elt[1:-1]
-                    res = self.execute(run_code,flag=False)#,echoflag=self.ECHO)
+                    res = self.execute(run_code,flag=False)
                     if res == error.Halt:
-                        #return error.Halt
                         raise error.Halt
+                    if res == error.EOI:
+                        return error.EOI
                     if res :
                         self.STOP=True
                     return
@@ -423,18 +418,13 @@ class Executor:
 
             i+=1
 
-    def dict_ex(self,code):
+    def dict_ex(self,nom,t1,t2):
         """Créer un dictionaire"""
-        name = code[0]
-        assert code[1]==':'
-        t1 = code[2]
-        assert code[3]=='⇴'
-        t2 =code[4]
-        assert code[5:]==[]
-        assert name not in self.VARIABLES and name not in self.DICTIONARY and name not in self.FUNCTIONS
+
+        assert nom not in self.VARIABLES and nom not in self.DICTIONARY and nom not in self.FUNCTIONS
         assert default_types.recognize_type(t1)and default_types.recognize_type(t2)
         t1,t2 = default_types.type_from_str(t1),default_types.type_from_str(t2)
-        self.DICTIONARY[name]=[(t1,t2),{}]
+        self.DICTIONARY[nom]=[(t1,t2),{}]
 
     def dict_affect(self,code):
         assert code[1] == '≔'

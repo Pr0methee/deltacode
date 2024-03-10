@@ -7,13 +7,13 @@ def isfloat(ch:str):
     except:
         return False
 #div euclidienne : '├'
-#necessaire / possible : '⬜'/'⬨'
+
 table = {
-    "\exists ":"∃ ",
-    "\in ":"∊ ",
-    "\\forall ":"∀ ",
-    '\empty':"∅ ",
-    "\include ":"⊆ ",
+    "\exists":"∃",
+    "\in":"∊",
+    "\\forall":"∀",
+    '\empty':"∅",
+    "\include":"⊆",
     '\S':"ϩ",
     '\\N':"ℕ",
     '\\Z':"ℤ",
@@ -38,7 +38,6 @@ table = {
     '|[':'⟦',
     ']|':'⟧',
     '\\nes':'□',
-    '\pos':'◊',
     ':=':'≔',
     '\\neq':'≠',
     '\ge':'⩾',
@@ -62,8 +61,13 @@ table = {
     '\\do':'⇝',
     '\\alias':'≜',
     "\inter":"⋂",
-    "\\union":"⋃"
-#⦅⦆,⧼⧽,⟨⟩ 
+    "\\union":"⋃",
+    "((":'⦅',
+    '))':'⦆',
+    '\(':'⟨',
+    '\)': '⟩',
+    '\setminus':'∖'
+#⦅⦆,⟨⟩ 
 }
 
 
@@ -159,10 +163,7 @@ def colorise(text:str):
             d['@'].append((l,c))        
             
         if car =='⟧' and iz:
-            iz=False
-        #if car == ']' and ir:
-        #    ir=False 
-            
+            iz=False        
 
 
     

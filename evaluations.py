@@ -1,5 +1,5 @@
-import default_types,_parser_
-from default_functions import convert
+import default_types,_parser_,Functions
+from default_functions import *
 
 def typize(l:list):
     for i,elt in enumerate(l):
@@ -39,9 +39,9 @@ def evaluate(l:list,variables,dictionary,function,alias,k=0):#,stdout=sys.__stdo
             l[i] = variables[alias[elt]][1]
         elif type(elt)==str and elt[0]=='{' and elt[-1]=='}':
             l[i]=evaluate_sets(elt,variables,dictionary,alias,function)
-        elif type(elt) == str and elt not in "∃∊+-×÷∧∨⊕¬⇔⇒⊆|^⟦⟧≔⩾=⩽≠<>;⋃∩":
+        elif type(elt) == str and elt not in _parser_.kw:
             l[i] = exec_func_dict(elt,variables,dictionary,function)#,stdout=stdout)
-    #print(l)
+
     for i,elt in enumerate(l):
         if type(elt) != str: continue
         if elt == '^':
@@ -85,7 +85,10 @@ def evaluate(l:list,variables,dictionary,function,alias,k=0):#,stdout=sys.__stdo
     traiter(l,'⩽',lambda b1,b2 : b1 <= b2)
     traiter(l,'<',lambda b1,b2 : b1 < b2)
     traiter(l,'⋃',lambda b1,b2 :b1.union(b2))
-    traiter(l,'∩',lambda b1,b2 : b1.inter(b2))
+    traiter(l,'⋂',lambda b1,b2 : b1.inter(b2))
+    #print(l,'is going to apply \setminus')
+    traiter(l,'∖',lambda b1,b2 : b1.setminus(b2))
+    #print('after :',l)
 
     traiter(l,'=',lambda b1,b2 : b1 == b2)
     traiter(l,'≠',lambda b1,b2 : b1 != b2)
@@ -138,13 +141,15 @@ def traiter(l,car,fct):
 def transform(ch:str):
     #'(2+3;7)' -> ['(','2','+','3',';','7',')']
     l=['']
-    S=0;s=False
+    S=0;s=False;chevron=0
     for car in ch:
         if car =='{' and not s:
             if l[-1]!='':l.append('')
             S+=1
         if car =='}' and not s : S-=1
         if car =='"':s=not s
+        if car =='⟨':chevron+=1
+        if car =='⟩':chevron-=1
 
         if car in '∃∊+-×÷∧∨¬⇔⇒;()':
             if S !=0:
@@ -154,6 +159,9 @@ def transform(ch:str):
                 if S!=0 or s:
                     l[-1]+=car
                     continue
+            if chevron !=0:
+                l[-1]+=car
+                continue
             if l[-1]=='':
                 l[-1]=car
             else:
@@ -210,13 +218,13 @@ def simpl(l:list):
                 del l[i-1]
                 del l[i-1]
 
-def evaluate_sets(ch,variables,dictionary,alias):
+def evaluate_sets(ch,variables,dictionary,alias,functions):
     s=set()
     for elt in default_types.SET.listify(ch):
         l_elt = _parser_.parse_a_sentence(elt)
         eval_l = create_evaluating_list(l_elt)
         typize(eval_l)
-        res = evaluate(eval_l,variables,dictionary,alias)
+        res = evaluate(eval_l,variables,dictionary,functions,alias)
         s.add(res)
 
     t = {type(elt) for elt in s}
@@ -238,57 +246,76 @@ def evaluate_sets(ch,variables,dictionary,alias):
     return S
 
 def exec_func_dict(ch:str,variables,dictionary,function):#,stdout):
-
-    ch_ =""
-    f=True
-
-    for car in ch:
-        if car != '$':
-            ch_ += car
-        elif f:
-            ch_ += '('
-            f=False
-        else:
-            ch_ +=','
-    if '('in ch_:
-        ch_ += ')'
-    else:
-        ch_ += '()'
-
-    p1 =True
     f,a='',''
-    for car in ch_:
-        if car =='(':p1=False
-        if p1:f+=car
-        else:a+=car
+    flag=True#complete func name
+    if '$' in ch : 
+        assert '⟨' not in ch
 
-    if f in dictionary:
+        ch_ =""
+
+        for car in ch:
+            if car != '$':
+                ch_ += car
+            elif flag:
+                ch_ += '('
+                flag=False
+            else:
+                ch_ +=','
+        if '('in ch_:
+            ch_ += ')'
+        else:
+            ch_ += '()'
+
+        p1 =True
+        for car in ch_:
+            if car =='(':p1=False
+            if p1:f+=car
+            else:a+=car
+
+        if f in dictionary:
+            l_=[]
+            for elt in a[1:-1].split(','):
+                if default_types.recognize_type(elt):
+                    l_.append('"'+elt+'"')
+                elif elt in variables:
+                    l_.append(variables[elt][1]) 
+                else:
+                    _l_ = [elt]
+                    typize(_l_)
+                    l_.append(_l_[0])
+            assert len(l_)==1
+            return dictionary[f][1][l_[0]]
+        assert (f in function and type(function[f])!=Functions.Applications) or f in DEFAULT_FUNCTIONS
         l_=[]
+
         for elt in a[1:-1].split(','):
             if default_types.recognize_type(elt):
                 l_.append('"'+elt+'"')
             elif elt in variables:
-                l_.append(variables[elt][1]) 
+                l_.append(f"variables['{elt}'][1]") 
+            elif elt=='':
+                continue
             else:
-                _l_ = [elt]
-                typize(_l_)
-                l_.append(_l_[0])
-        assert len(l_)==1
-        return dictionary[f][1][l_[0]]
-    
-    l_=[]
-    #print(a)
-    for elt in a[1:-1].split(','):
-        if default_types.recognize_type(elt):
-            l_.append('"'+elt+'"')
-        elif elt in variables:
-            l_.append(f"variables['{elt}'][1]") 
-        elif elt=='':
-            continue
-        else:
-            raise
-    
-    a = '('+','.join(l_)+')'
-    if f in function:
-        f='function["'+f+'"]'
-    return eval(f+a)
+                raise
+        
+        a = '('+','.join(l_)+')'
+        if f in function:
+            f='function["'+f+'"]'
+        return eval(f+a)
+
+    assert ch.count('⟨') == ch.count('⟩')==ch.count('$')+1==1 and ch[-1]=='⟩'
+    f,a = ch[:-1].split('⟨')
+    a=a.replace(';',',')
+    assert f in function and type(function[f])==Functions.Applications
+    f="function['"+f+"']"
+    l_args = []
+    for elt in a.split(','):
+        l=_parser_.parse_a_sentence(elt)
+        l=create_evaluating_list(l)
+        typize(l)
+        if l !=[]:l_args.append(evaluate(l,variables,dictionary,function,{}))
+    a = ','.join(f"l_args[{i}]" for  i in range(len(l_args)))
+    return eval(f+'('+a+')')
+
+if __name__ == '__main__':
+    (create_evaluating_list(['"a"']))

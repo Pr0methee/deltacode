@@ -124,7 +124,7 @@ class App(Tk):
         for k,v in d.items():
             for elt in v:
                 #if k == 'B':self.text.replace(str(elt[0])+'.'+str(elt[1])+'-1c',str(elt[0])+'.'+str(elt[1]),'B')
-                if k == 'i':self.text.replace(str(elt[0])+'.'+str(elt[1])+'-1c',str(elt[0])+'.'+str(elt[1]),'i')
+                #if k == 'i':self.text.replace(str(elt[0])+'.'+str(elt[1])+'-1c',str(elt[0])+'.'+str(elt[1]),'i')
                 self.text.tag_add(k,str(elt[0])+'.'+str(elt[1])+'-1c',str(elt[0])+'.'+str(elt[1]))    
 
     def Run(self):      

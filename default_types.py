@@ -1,4 +1,4 @@
-import math
+import math,copy
 import default_functions
 
 class N:
@@ -323,7 +323,7 @@ class C:
         return self.re+1j*self.im
     
     def recognize(ch):
-        return all([car in '.-0123456789+i' for car in ch])and ch !='' and ch.replace('.','').replace('-','').replace('+','') != ''
+        return all([car in '.-0123456789+ι' for car in ch])and ch !='' and ch.replace('.','').replace('-','').replace('+','') != ''
     
     @classmethod
     def from_str(cls,ch):
@@ -336,7 +336,7 @@ class C:
             else:
                 l[-1]+=car
         if len(l)==1:
-            if 'i' in l[0]:
+            if 'ι' in l[0]:
                 l= ['0']+[l[0][:-1]]
                 if l[1]=='':l[1]='1'
             else:
@@ -347,7 +347,7 @@ class C:
         return self.re + self.im *1j
     
     def __str__(self) -> str:
-        return str(self.re.value)+'+'+str(self.im.value)+'i' if self.im>=R(0) else 'C'+str(self.re.value)+str(self.im.value)+'i' 
+        return str(self.re.value)+'+'+str(self.im.value)+'ι' if self.im>=R(0) else 'C'+str(self.re.value)+str(self.im.value)+'ι' 
 
     def __add__(self,obj):
         assert type(obj)in NUMERAL
@@ -520,7 +520,6 @@ class SET:
     
     def add(self,v):
         if type(self.type) ==CrossSet:
-            #print(type(v.type)==type(self.type) and str(v.type)==str(self.type),v.type,self.type)
             assert type(v)==Tuple and v.type==self.type
         elif type(v) != self.type and (not include(type(v),self.type)):
             raise
@@ -547,7 +546,6 @@ class SET:
                 t =True
             elif car ==')':
                 t =False
-        #print(l)
         return l
 
     def recognize(ch,typ):
@@ -578,6 +576,9 @@ class SET:
         else:
             raise
         return s
+    
+    def deep_get(self):
+        return self.__l
 
     def inter (self,__o):
         if type(__o) != SET:raise
@@ -599,7 +600,23 @@ class SET:
             raise
         return s
 
-        
+    def setminus(self,__other):
+        if type(__other) == EmptySet:
+            return copy.copy(self)
+        assert type(__other)==SET
+        r = SET(self.type)
+        for elt in self:
+            if elt in __other.deep_get():
+                continue
+            r.add(elt)
+        return r
+    
+    def __contains__(self,elt):
+        print('__contains__ called')
+        for k in self:
+            if k==elt:
+                return True
+        return False
     
     def __str__(self) -> str:
         if len(self.__l)==0:
@@ -620,10 +637,13 @@ class SET:
         return hash(self.__str__())
     
     def __eq__(self, __value: object) -> bool:
-        return B(id(self)==id(__value))
+        if type(__value)==EmptySet:
+            return B(self.__l==set())
+        if type(__value) != SET:return B(False)
+        return B(self.deep_get()==__value.deep_get())
     
     def __ne__(self, __value: object) -> bool:
-        return B(id(self)!=id(__value))
+        return B(not (self==__value).v)
 
     
     
@@ -632,7 +652,6 @@ class SET:
 
 class CrossSet:
     def __init__(self,*t):
-        #print(t)
         assert all(typ in (N,Z,R,C,S,B,EmptySet) or type(typ)==Parts  for typ in t)
         self.schema = t
 
@@ -646,7 +665,6 @@ class CrossSet:
         return cls(*t)
     
     def __getitem__(self,i):
-        print(self.schema)
         return self.schema[i]
 
     def recognize_type(ch):
@@ -679,8 +697,6 @@ class Tuple:
             if type(typ.schema[i])==Parts:
                 assert type(obj[i]) == SET and obj[i].type == typ.schema[i].typ
             else :assert type(obj[i])== typ.schema[i] 
-        #print([type(obj[i])== typ.schema[i] for i in range(len(obj)) ])
-        #assert all([type(obj[i])== typ.schema[i] for i in range(len(obj)) ]) 
     
     @classmethod
     def from_str(cls,ch,typ):
@@ -698,7 +714,6 @@ class Tuple:
         if len(l) != len(typ.schema):return False
 
         for i in range(len(l)):
-            #print(l[i])
             if not typ.schema[i].recognize(l[i]):return False
         return True
 
@@ -728,7 +743,7 @@ class Tuple:
 
 class Parts:
     def __init__(self,t):
-        assert t in (N,Z,R,C,B,S) or type(t)==CrossSet  or type(t)==Parts
+        assert t in (N,Z,R,C,B,S) or type(t)==CrossSet  or type(t)==Parts or t == EmptySet
         self.typ = t
     
     def __str__(self) -> str:
@@ -736,6 +751,10 @@ class Parts:
     
     def __repr__(self) -> str:
         return self.__str__()
+
+    def __eq__(self, __value: object) -> bool:
+        if type(__value) != Parts:return False
+        return self.typ == __value.typ
     
     def recognize(v:str):
         if len(v) <=3:return False
@@ -746,6 +765,8 @@ class Parts:
         assert Parts.recognize(ch)
         return cls(type_from_str(ch[2:-1]))
     #bien coder Parts (from_str etc. ) puis faire dans executor
+    def __hash__(self) -> int:
+        return hash(str(self))
 
 
 
@@ -778,7 +799,7 @@ class ZIntervalle:
     
     def __iter__(self):
         if (self.binf >=N(0)).v:self.binf = N(self.binf.value)
-        self.i = self.binf
+        self.i = self.binf-N(1)
         return self
     
     def __next__(self):
@@ -790,6 +811,9 @@ class ZIntervalle:
 
     def symbolic(self):
         return range(self.binf.value,self.bsup.value+1)
+    
+    def __str__(self) -> str:
+        return "["+str(self.binf)+';'+str(self.bsup)+']'
 
 class Niterator:
     def __init__(self):
@@ -808,10 +832,14 @@ class EmptySet:
         return self.__str__()
     def recognize(ch:str):
         return ch == '∅'
+    def __eq__(self, __value: object) -> bool:
+        return type(__value)==EmptySet
     @classmethod
     def from_str(cls,ch):
         assert EmptySet.recognize(ch)
         return cls()
+    def __hash__(self) -> int:
+        return hash(str(self))
     
 
 TYPES={"ϩ":S,"ℕ":N,"ℤ":Z,"ℝ":R,"ℂ":C,'ℬ':B}
@@ -848,15 +876,9 @@ def is_tuple(ch:str):
     if not has_tuple_schema(ch):return False
     return not (type(None) in get_tuple_type(ch))
 
-"""def include(t1:CrossSet,t2:CrossSet):
-    #t1 inclus dans t2
-    if len(t1.schema)!=len(t2.schema):return False
-    for i in range(len(t1.schema)):
-        if not (t1.schema[i]==t2.schema[i] or t2.schema[i] in INCLUSIONS.get(t1.schema[i],[])):
-            return False
-    return True"""
 
 def type_from_str(ch:str):
+    if ch == '℘(∅)':return Parts(EmptySet)
     if ch in  TYPES:return TYPES[ch]
     if Parts.recognize(ch):return Parts.from_str(ch)
     if CrossSet.recognize_type(ch):return CrossSet.from_str(ch)
@@ -865,6 +887,7 @@ def type_from_str(ch:str):
 
 def recognize_type(ch:str):
     if ch == '':return False
+    if ch == '℘(∅)':return True
     if ch in TYPES:
         return True
     if ch[0]==chr(8472):
@@ -895,6 +918,7 @@ def split_tup(ch:str):
     return l
 
 def stringify(t):
+    if t == EmptySet:return '∅'
     if t in TYPES_:
         return TYPES_[t]
     return str(t)
@@ -914,7 +938,6 @@ def include (t1,t2):
         return all(include(t1.schema[i],t2.schema[i]) for i in range(len(t1.schema)))
     
     if t1 == EmptySet and type(t2) == Parts:return True
-    print(t1,t2)
     raise
     return False
 

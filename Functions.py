@@ -8,15 +8,22 @@ class Applications:
         self.types = (default_types.type_from_str(t_entree),default_types.type_from_str(t_sortie))
 
     def set_args_name(self,*noms:str):
+        if self.types[0] == default_types.Parts(default_types.EmptySet):
+            assert noms==('∅',)
+            self.arg_names=()
         assert all(type(elt)==str for elt in noms)
         #condition : autant de noms que de types
         self.arg_names = noms
     
     def set_expr(self,expr):
+        if type(expr)!=list:expr=[expr]
         self.expr =expr
     
     def __call__(self,*vals):
-        if type(self.types[0])!=default_types.CrossSet:
+        if self.types[0] == default_types.Parts(default_types.EmptySet):
+            assert vals==()
+            ARGS={}
+        elif type(self.types[0])!=default_types.CrossSet:
             assert default_types.include(type(vals[0]),self.types[0])
             ARGS = {
                 self.arg_names[0]:[self.types[0],vals[0]]
@@ -37,6 +44,7 @@ class Applications:
                 if type(r) != default_types.B:
                     raise error.TypeError()
                 if r.v:
+                    
                     l=evaluations.create_evaluating_list(expr)
                     evaluations.typize(l)
                     r = evaluations.evaluate(l,ARGS,{},FUNC,{})#liste parsee, transformee en evaluating list, typee
@@ -49,7 +57,7 @@ class Applications:
         return default_functions.convert(r,self.types[1])
     
     def __str__(self) -> str:
-        r= self.name+' : '+str(self.types[0])+' ⟶  '+str(self.types[0])
+        r= self.name+' : '+default_types.stringify(self.types[0])+' ⟶  '+default_types.stringify(self.types[1])
         try:
             r+='\n'+';'.join(self.arg_names) + ' ⟼  '+''.join(self.expr)
         except:pass

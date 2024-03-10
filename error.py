@@ -21,7 +21,23 @@ class UnknownObject(Exception):
     def name(self):
         return "UnknownObject : "
 
-class TypeError(Exception):pass
+class TypeError(Exception):
+    def __init__(self, obj) -> None:
+        super().__init__(f"{obj} can't be understood as a type.")
+    def name(self):
+        return 'TypeError'
+    
+class InvalidName(Exception):
+    def __init__(self, name) -> None:
+        super().__init__(f"Invalid name for an object : {name}")
+    def name(self):
+        return 'InvalidName'
+
+class NameError(Exception):
+    def __init__(self, name) -> None:
+        super().__init__(f"Unable to affect value to {name}, it does not exist.")
+    def name(self):
+        return "NameError"
 
 class WrongSyntax(Exception):
     def __init__(self) -> None:
@@ -36,6 +52,13 @@ class AlreadyExistsError(Exception):
     
     def name(self):
         return "AlreadyExistsError"
+
+class EOI(Exception):
+    def __init__(self):
+        super().__init__()
+    
+    def name(self):
+        return "EOI"
 
 class Halt(Exception):
     def __init__(self) -> None:

@@ -1,4 +1,4 @@
-kw = '∃∊+-×÷∧∨¬⇔⇒⊆|^≔⩾=⊕⩽∀≠<>:├?⇝➣⇴□⟼⟶∄≜⋃∩()'#⟦⟧[]{}
+kw = '∃∊+-×÷∧∨¬⇔⇒⊆|^≔⩾=⊕⩽∀≠<>:├?⇝➣⇴□⟼⟶∄≜⋃⋂∖'#⟦⟧[]{}
 t=("ϩ","ℕ","ℤ","ℝ","ℂ",'ℬ')
 
 def without_comments(ch:str):
@@ -48,16 +48,18 @@ def parse_in_sentences(ch:str):
     return l
 
 def parse_a_sentence(ch:str):
+    if ch =='':return []
     if ch[0]=='@' or ch[0]==ch[-1]=='#':return [ch]
     l=[]
     mot=''
-    s=False;intervalle=False;SET = 0;sc=0
+    s=False;SET = 0;sc=0;chevron=0
     for car in ch:
         if car =='"':s=not s
         if car ==' ' and not s:continue
         if car =='{' and not s:SET +=1
         if car  == '\\' and not s:sc+=1
-        if (car in kw ) and not s and SET==0 and sc==0:
+        if car == '⟨' and not s and sc==0: chevron+=1
+        if (car in kw ) and not s and SET==0 and sc==0 and chevron==0:
             if car == '×' and mot != '' and mot[-1] in t:
                 mot+=car
                 continue
@@ -70,6 +72,7 @@ def parse_a_sentence(ch:str):
         if car =='}'and not s:
             SET -=1
         if car =='/' and not s : sc-=1
+        if car == '⟩' and not s and sc==0: chevron-=1
     if mot != '':l.append(mot)
     return l
 
@@ -79,7 +82,5 @@ def parse_a_sentence(ch:str):
 def parse(ch:str):
     ch=without_comments(ch)
     l_=parse_in_sentences(ch)
-    #print(l_)
-    #print([parse_a_sentence(ch) for ch in l_])
-    return ([parse_a_sentence(ch) for ch in l_])
+    return (list(map(parse_a_sentence,l_)))#[parse_a_sentence(ch) for ch in l_]
 #(chr(2080))
