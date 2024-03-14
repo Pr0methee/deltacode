@@ -1,11 +1,14 @@
 import copy
+
+PREC = 20 #nombre de chiffres après la virgule
+
 class Number:
     def __init__(self,sgn:bool,ent:list[int],frac:list[int]):
         """
         sgn : bool, True -> négatif, False -> positif (0 est +)
         """
         assert type(sgn)==bool
-        assert type(ent)==type(frac)==list and len(frac)<=20
+        assert type(ent)==type(frac)==list and len(frac)<=PREC
         assert all([type(elt)==int for elt in ent]) and all([type(elt)==int for elt in frac])
         assert all([0<=elt<10 for elt in ent]) and all([0<=elt<10 for elt in frac])
         self.sgn=sgn#True : <0, False >0
@@ -15,7 +18,7 @@ class Number:
         if self.ent == [0] and self.sgn:
             self.sgn=False
         self.frac=frac #partie decimale
-        while len(self.frac) != 20:
+        while len(self.frac) != PREC:
             self.frac.append(0)
 
     def __str__(self):
@@ -47,8 +50,8 @@ class Number:
             while len(entb) <len(enta):
                 entb=[0]+entb
             ent=[enta[i]+entb[i] for i in range(len(enta))]
-            frac=[self.frac[i]+__other.frac[i] for i in range(20)]
-            for k in range(19,0,-1):
+            frac=[self.frac[i]+__other.frac[i] for i in range(PREC)]
+            for k in range(PREC-1,0,-1):
                 if frac[k]>=10:
                     frac[k]-=10
                     frac[k-1]+=1
@@ -129,7 +132,7 @@ class Number:
                 else:
                     lc[k] = la[k]-lb[k]+10
                     lb[k-1] += 1
-            entc,fracc = lc[:-20],lc[-20:]
+            entc,fracc = lc[:-PREC],lc[-PREC:]
             return Number(False,entc,fracc)
         #self-__other = -(__other - self)
         r = __other-self
@@ -148,14 +151,14 @@ class Number:
         if __o == Number(False,[1],[0]):
             return copy.copy(self)
         
-        if self.frac == [0 for _ in range(20)] and self.ent[-1] ==0:
+        if self.frac == [0 for _ in range(PREC)] and self.ent[-1] ==0:
             a=Number(self.sgn,self.ent[:-1],[0])
             entb=__o.ent+[__o.frac[0]]
             
             fracb=__o.frac[1:]
             b = Number(__o.sgn,entb,fracb)
             return a*b
-        if __o.frac == [0 for _ in range(20)] and __o.ent[-1] ==0:
+        if __o.frac == [0 for _ in range(PREC)] and __o.ent[-1] ==0:
             return __o*self
 
 
@@ -186,11 +189,11 @@ class Number:
                 else:
                     act[j-1] += i
 
-            while len(act)< 41:
+            while len(act)< 2*PREC+1:
                 act=[0]+act
-            lc.append(Number40(act[:-40],act[-40:]))
+            lc.append(NumberD(act[:-2*PREC],act[-2*PREC:]))
         
-        S=Number40([0],[0])
+        S=NumberD([0],[0])
         for elt in lc:
             S += elt
         r=S.troncate()
@@ -207,7 +210,7 @@ class Number:
             return Number(False,[0],[0])
         if __o == Number(False,[0],[0]):
             raise ZeroDivisionError
-        if __o.frac != [0 for  _ in range(20)]:
+        if __o.frac != [0 for  _ in range(PREC)]:
             a = Number(False,[1,0],[0]) * self
             b = Number(False,[1,0],[0]) * __o
             return a/b
@@ -222,7 +225,7 @@ class Number:
         act =la [:i]
         n = Number(False,act,[0])
         f = False #flag, est-ce qu'on a commencé a remplir la partie decimale
-        while len(fracc) != 20:
+        while len(fracc) != PREC:
             k=Number(False,[0],[0])
             while k*__o-n<Number(False,[0],[0]):
                 k+=Number(False,[1],[0])
@@ -257,7 +260,7 @@ class Number:
         l=ch.split(',')
         l+=['0']
         ent = [int(car) for car in l[0]]
-        frac = [int(l[1][i]) for i in range(min(20,len(l[1])))]
+        frac = [int(l[1][i]) for i in range(min(PREC,len(l[1])))]
         return cls(sgn,ent,frac)
     
     def recognize(ch:str):
@@ -265,29 +268,29 @@ class Number:
 
 
 
-class Number40:
+class NumberD:
     def __init__(self,ent:list[int],frac:list[int]):
         """
         Toujours positif !
-        Nombre avec 40 chiffres après la virgule
+        Nombre avec 2PREC chiffres après la virgule
         Sert seulement pour multiplier !
         """
-        assert type(ent)==type(frac)==list and len(frac)<=40
+        assert type(ent)==type(frac)==list and len(frac)<=2*PREC
         assert all([type(elt)==int for elt in ent]) and all([type(elt)==int for elt in frac])
         assert all([0<=elt<10 for elt in ent]) and all([0<=elt<10 for elt in frac])
         self.ent=ent#partie entière
         while self.ent[0]==0 and len(self.ent)>1:
             self.ent.pop(0)
         self.frac=frac #partie decimale
-        while len(self.frac) != 40:
+        while len(self.frac) != 2*PREC:
             self.frac.append(0)
 
     
     def __add__(self,__other):
-        assert type(__other)==Number40
+        assert type(__other)==NumberD
 
-        if __other == Number40([0],[0]):
-            return Number(self.sgn,self.ent,self.frac)
+        if __other == NumberD([0],[0]):
+            return NumberD(self.ent,self.frac)
         
 
         enta=self.ent
@@ -297,8 +300,8 @@ class Number40:
         while len(entb) <len(enta):
             entb=[0]+entb
         ent=[enta[i]+entb[i] for i in range(len(enta))]
-        frac=[self.frac[i]+__other.frac[i] for i in range(40)]
-        for k in range(39,0,-1):
+        frac=[self.frac[i]+__other.frac[i] for i in range(2*PREC)]
+        for k in range(2*PREC-1,0,-1):
             if frac[k]>=10:
                 frac[k]-=10
                 frac[k-1]+=1
@@ -312,10 +315,10 @@ class Number40:
         if ent[0]>=10:
             ent[0]-=10
             ent=[1]+ent
-        return Number40(ent,frac)
+        return NumberD(ent,frac)
 
     def troncate(self):
-        return Number(False,self.ent,self.frac[:20])
+        return Number(False,self.ent,self.frac[:PREC])
 
 
 
