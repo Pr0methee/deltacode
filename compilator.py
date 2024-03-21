@@ -72,7 +72,7 @@ table = {
 
 
 def decompile(text:str):
-    for k,v in table:
+    for k,v in table.items():
         text=text.replace(v,k)
     return text
 
