@@ -1,4 +1,4 @@
-from default_functions import F
+from default_functions import DEFAULT_FUNCTIONS 
 
 def isfloat(ch:str):
     try:
@@ -110,7 +110,7 @@ def colorise(text:str):
             else:
                 if isfloat(mot.replace(',','.').replace('ι','')):
                     index = 'n'
-                elif mot in F:
+                elif mot in DEFAULT_FUNCTIONS:
                     index='f'
                 elif mot:
                     index='label'
@@ -127,7 +127,7 @@ def colorise(text:str):
             else:
                 if isfloat(mot.replace(',','.').replace('ι','')):
                     index = 'n'
-                elif mot in F:
+                elif mot in DEFAULT_FUNCTIONS:
                     index='f'
                 else:
                     index='label'
@@ -173,7 +173,7 @@ def colorise(text:str):
     c+=1
     if isfloat(mot.replace(',','.').replace('ι','')):
         index = 'n'
-    elif mot in F:
+    elif mot in DEFAULT_FUNCTIONS:
         index='f'
     elif mot:
         index='label'
