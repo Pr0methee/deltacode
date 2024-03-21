@@ -134,7 +134,7 @@ class App(Tk):
     
     def saveas(self):
         self.compile()
-        f = filedialog.asksaveasfilename(defaultextension='.e',filetypes=[('Compiled E files','.e'),('Uncompiled E files','.eb'])
+        f = filedialog.asksaveasfilename(defaultextension='.e',filetypes=[('Compiled E files','.e'),('Uncompiled E files','.eb')])
         with open(f,'wb') as file:
             if os.path.splitext(f)[1]=='.e':
                 file.write(bytes(self.text.get(2.0,END),'utf-8'))
@@ -142,7 +142,7 @@ class App(Tk):
                 file.write(bytes(compilator.decompile(self.text.get(2.0,END)),'utf-8'))
 
     def open(self):
-        f = filedialog.askopenfilename(defaultextension='.e',filetypes=[('Compiled E files','.e'),('Uncompiled E files','.eb'])
+        f = filedialog.askopenfilename(defaultextension='.e',filetypes=[('Compiled E files','.e'),('Uncompiled E files','.eb')])
         with open(f,'rb') as file:
             r=file.read().decode('utf-8')
             self.text.insert(END,r)
