@@ -1,11 +1,8 @@
 import default_types #import *
 import sys,error
 
-DEFAULT_FUNCTIONS = {"card","echo","ask","convert"}
+DEFAULT_FUNCTIONS = ['Im', 'Re', 'ask', 'card', 'echo','convert','dim','card']
 
-
-def card(l):
-    return len(l)
 
 def echo(*v):
     print(*v)#,file=file)
@@ -55,12 +52,19 @@ def convert(obj,typ):
         t.append(convert(obj[i],typ.schema[i]))
     return default_types.Tuple(tuple(t),typ)
 
+def dim(elt):
+    assert type(elt)==default_types.CrossSet or type(elt)==default_types.Tuple
+    if type(elt)==default_types.Tuple:
+        return dim(elt.type)
+    return default_types.N(len(elt.schema))
+
+def card(elt):
+    assert type(elt)==default_types.SET
+    return default_types.N(len(elt.deep_get()))
+
 def IN(v,t):
     t = default_types.TYPES[t]
     if type(v)==t:
         return default_types.B(True)
     if type(v) not in default_types.INCLUSIONS:return default_types.B(False)
     return default_types.B(t in default_types.INCLUSIONS(type(v)))
-
-
-F = ['Im', 'Re', 'ask', 'card', 'echo','convert']
