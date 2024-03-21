@@ -20,22 +20,23 @@ def parse_in_sentences(ch:str):
     #l_=parse_g(ch)
     #if l_ == 'ERROR':return l_
     l=[]
-    s=False;sc=0;mot='';a=False#string,sous-code,actual word,arobas ?
+    s=False;sc=0;mot='';a=False;d=False#string,sous-code,actual word,arobas, dièse ?
     for car in ch:
+        if car =='#':d=not d
         if car =='"':s=not s
         if car =='\\' and not s:sc+=1
         if car =='/' and not s :sc-=1
 
-        if car =='.' and not s and sc ==0:
+        if car =='.' and not s and sc ==0 and not d:
             l.append(mot)
             mot=''
-        elif car =='\n' and not s and sc==0 :
+        elif car =='\n' and not s and sc==0 and not d :
             if a :
                 l.append(mot)
                 a=False
                 mot=''
             continue
-        elif car =='@' and not s and sc ==0:
+        elif car =='@' and not s and sc ==0 and not d:
             assert mot.replace(' ','') ==''
             a=True
             mot='@'
