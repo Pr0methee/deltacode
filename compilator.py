@@ -71,7 +71,10 @@ table = {
 }
 
 
-
+def decompile(text:str):
+    for k,v in table:
+        text=text.replace(v,k)
+    return text
 
 def compile(text:str):
     K = list(table.keys())
