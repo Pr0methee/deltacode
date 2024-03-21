@@ -136,7 +136,7 @@ class App(Tk):
         self.compile()
         f = filedialog.asksaveasfilename(defaultextension='.e',filetypes=[('Compiled E files','.e'),('Uncompiled E files','.eb'])
         with open(f,'wb') as file:
-            if os.path.splittext(f)[1]=='.e':
+            if os.path.splitext(f)[1]=='.e':
                 file.write(bytes(self.text.get(2.0,END),'utf-8'))
             else:
                 file.write(bytes(compilator.decompile(self.text.get(2.0,END)),'utf-8'))
