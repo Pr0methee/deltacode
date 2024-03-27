@@ -1,9 +1,8 @@
 from tkinter.scrolledtext import ScrolledText #as scrolledtext.Scrolledtext
-import _parser_, default_types, evaluations,Functions,error,time
+import _parser_, default_types, evaluations,Applications,error,time,Functions
 from default_functions import convert
 import sys
 from tkinter import END
-
 
 class StdRedirector:
     def __init__(self, text_widget:ScrolledText):
@@ -48,7 +47,7 @@ class Executor:
         self.ECHO=True
     
     def create_variable(self,name,typ,way='∊'):
-        if name in self.VARIABLES:
+        if name in self.VARIABLES or name in self.FUNCTIONS or name in  self.ALIAS or name in self.DICTIONARY:
             raise error.AlreadyExistsError(name)
         
         if not(default_types.recognize_type(typ)):
@@ -139,6 +138,7 @@ class Executor:
             try:
                 h =self.exec(ph)
             except Exception as err:
+                raise err
                 self.STOP=True
                 if 'name' in dir(err):
                     if err==error.Halt and self.BOUCLE:
@@ -260,12 +260,14 @@ class Executor:
                 assert nom not in self.DICTIONARY
                 assert nom not in self.ALIAS
                 assert nom not in self.FUNCTIONS
-                self.FUNCTIONS[nom]=Functions.Applications(nom,t1,t2)
+                self.FUNCTIONS[nom]=Applications.Applications(nom,t1,t2)
             case [nom,':',vars,'⟼',return_]:
                 if nom not in self.FUNCTIONS:raise
-                f:Functions.Applications = self.FUNCTIONS[nom]
+                f:Applications.Applications = self.FUNCTIONS[nom]
                 f.set_args_name(*vars.split(';'))
                 f.set_expr(return_)
+            case [thing] if len(thing) >2 and thing[0]==thing[-1]=='#':
+                self.create_function(thing)
             case _:
                 assert all([elt not in _parser_.kw for elt in ph])
                 self.eval_expr(ph)
@@ -443,12 +445,21 @@ class Executor:
         self.DICTIONARY[obj[0]][1][k]=v
     
     def create_function(self,code):
-        assert len(code)== 5
-        assert code[0] not in self.VARIABLES and code[0] not in self.FUNCTIONS
-        assert code[1]==':' and code[3]== '⟶'
-        assert default_types.recognize_type(code[2]) and default_types.recognize_type(code[4])
+        code=code[1:-1]
+        code=_parser_.parse(code)
+        assert len(code)>2
+        assert len(code[0])==5
+        assert code[0][0] not in self.VARIABLES and code[0][0] not in self.FUNCTIONS
+        assert code[0][1]==':' and code[0][3]== '⟶'
+        assert default_types.recognize_type(code[0][2]) and default_types.recognize_type(code[0][4])
 
-        self.FUNCTIONS[code[0]] = default_types.Function(self,code[2],code[4])
+        self.FUNCTIONS[code[0][0]] = Functions.Function(code[0][0],code[0][2],code[0][4],self.echo)
+        assert len(code[1]) == 1 and code[1][0][0] == '⟨' and code[1][0][-1] == '⟩'
+        args = code[1][0][1:-1].split(';')
+        self.FUNCTIONS[code[0][0]].set_args_name(*args)
+        self.FUNCTIONS[code[0][0]].set_code(code[2:])
+        self.FUNCTIONS[code[0][0]].set_global_obj(self.VARIABLES,self.FUNCTIONS,self.ALIAS,self.DICTIONARY)
+
 
 
 class ModuleExecutor:
@@ -463,6 +474,357 @@ class ModuleExecutor:
         return (ex.VARIABLES,ex.DICTIONARY,ex.ALIAS)
 
 
+class FuncExecutor:
+    def __init__(self,code,echo,var,func,alias,dict):
+        self.echo:ScrolledText=echo
+        self.VAR=var
+        self.FUNC= func
+        self.ALIAS = alias
+        self.DICT = dict
+        self.ASSERTS=[]
+        self.code=code #list[str]
+        self.BOUCLE=False
+        self.ECHO=True
+        self.returned, self.return_obj=False,default_types.EmptySet()
+
+    def create_variable(self,name,typ,way='∊'):
+        if name in self.VAR or name in self.FUNC or name in  self.ALIAS or name in self.DICT:
+            raise error.AlreadyExistsError(name)
+        
+        
+        if not(default_types.recognize_type(typ)):
+            raise error.TypeError(typ)
+
+        if not valid_name(name):
+            raise error.InvalidName(name)
+
+        if way =='∊':
+            self.VAR[name]=[default_types.type_from_str(typ),None]
+        else:
+            self.VAR[name]=[default_types.Parts(default_types.type_from_str(typ)),None]
+        self.echo_dec(name,typ,way)
+
+    def affect(self,name,expr:list[str]):
+        if name not in self.VAR and name not in self.ALIAS:
+            raise error.NameError(name)
+        
+        if name in self.ALIAS:
+            name=self.ALIAS[name]
+
+        value = self.eval_expr(expr.copy())
+        if type(value)==str :
+            if value == 'err':
+                self.raise_error('EvaluatingError','')
+                return
+            elif value == '0err':
+                self.raise_error('ZeroDivisionError',f'Trying to divide by zero while evaluating {"".join(expr)}')
+                return
+        try:
+            value = convert(value,self.VAR[name][0])
+        except Exception as err:
+            if type(self.VAR[name][0])==default_types.CrossSet or type(self.VARIABLES[name][0]) == default_types.Parts:
+                reqtyp=self.VAR[name][0]
+            else:
+                reqtyp = default_types.TYPES_[self.VAR[name][0]]
+
+            if type(value) == default_types.Tuple:
+                gettyp = value.type
+            elif type(value)==default_types.SET:
+                gettyp = value.type
+            else:
+                gettyp=default_types.TYPES_[type(value)]
+                
+            self.raise_error("TypeError",f"Can't affect {''.join(expr)} to <{name}>, it has the type {gettyp} while it's expected to be a {reqtyp} object")
+            return
+
+        self.echo_affect(name,value)
+        self.VAR[name][1]=value
+    
+    def suppr_var(self,var):
+        if var not in self.VAR:
+            self.raise_error("UnknownVariable",f"Unable to destroy variable {var}, it does not exist.")
+            return
+        
+        del self.VAR[var]
+        self.echo_del(var)
+
+    def create_alias(self,name,ref):
+        if name in self.VAR or name in self.ALIAS:
+            raise error.AlreadyExistsError(name)
+        if ref not in self.VAR and ref not in self.ALIAS:
+            raise error.UnknownObject(ref)
+        
+        if ref in self.ALIAS:
+            self.ALIAS[name] = self.ALIAS[ref]
+        else:
+            self.ALIAS[name]=ref
+
+    def execute(self):#,echoflag=True):
+
+        defstdout = sys.stdout
+        defstdin = sys.stdin
+
+        sys.stdout = StdRedirector(self.echo)
+        sys.stdin = StdRedirector(self.echo)
+
+        #Ctrl+C : break self.echo.bind("")
+
+        self.STOP =False
+        t=time.time()
+        self.echo.bind_all('<Control-c>',self.raise_end)
+        for i,ph in enumerate(self.code):
+            try:
+                h =self.exec(ph)
+            except Exception as err:
+                self.STOP=True
+                if 'name' in dir(err):
+                    if err==error.Halt and self.BOUCLE:
+                        self.BOUCLE=False
+                        return
+                    self.raise_error(err.name(),str(err))
+                else:
+                    raise err
+            try:
+                if h == error.Halt:
+                    if self.BOUCLE:
+                        self.BOUCLE=False
+                        return
+                    else:
+                        err=error.Halt()
+                        self.raise_error(err.name(),str(err))
+                if h == error.EOI:
+                    return error.EOI
+
+            except NameError:
+                h=None
+            if h != None:
+                return h
+            if self.STOP or self.returned:break
+            self.echo.update()
+        #self.ECHO=True
+        
+        sys.stdout=defstdout
+        sys.stdin=defstdin
+        
+        self.echo.unbind_all('<Control-c>')
+        return self.return_obj
+
+    def raise_end(self,evt):
+        self.STOP=True
+        self.raise_error("Keyboard Interupt",'')
+
+    def exec(self,ph):
+        match ph:
+            case ['∃',name, ('∊' | '⊆') as way,typ]:
+               self.create_variable(name,typ,way)
+            case [v1, '≜', v2]:
+               self.create_alias(v1,v2)
+            case ['∄',var]:
+               self.suppr_var(var)
+            case [thing,'≔',*r]:
+                if '$' in thing:
+                   self.dict_affect(ph)
+                else:
+                   self.affect(thing,r)
+            case [thing] if thing != '' and thing[0]=='@':
+                match thing[1:].split(' '):
+                    case ['HIDE']: self.ECHO = False
+                    case ['SHOW']: self.ECHO=True
+                    case ['HALT']: return error.Halt
+                    case ['CONTINUE']: return error.EOI
+                    case ['WAIT']: time.sleep(3e-3)
+                    case ['BELL']: self.echo.bell()
+                    case _:raise error.UnknownObject(ph[0])
+            case ['□',*expr]:
+                if expr not in self.ASSERTS:self.ASSERTS.append(expr)
+            case ['¬','□',*expr]:
+                if expr in self.ASSERTS:
+                    self.ASSERTS.remove(expr)
+            case ['∀',*code]:self.for_all_ex(ph)
+            case [nom,':',typ1,'⇴',typ2]:
+                self.dict_ex(nom,typ1,typ2)#refaire
+            case ['➣',*code]:
+                r=self.if_ex(ph)
+                if r == error.EOI:return r
+            case ['⟼',*expr]:
+                r=self.eval_expr(expr)
+                self.return_obj=r
+                self.returned=True
+            case _:
+                assert all([elt not in _parser_.kw for elt in ph])
+                self.eval_expr(ph)
+        
+        
+        for tests in self.ASSERTS:
+            res = self.eval_expr(tests)
+            if type(res) != default_types.B and type(res) != type(None):
+                raise TypeError
+            if type(res)==default_types.B and res.equiv(default_types.B(True)).v ==False:
+                #self.raise_error("AssertionError",f"The assertion '{''.join(tests)}' has failled. ")
+                raise error.WrongAssertion(tests)
+
+    def raise_error(self,err,mes):
+        self.STOP =True
+        self.echo.config(state='normal')
+        self.echo.insert('end',err + ' has occured at line n°'+str(self.l)+'\n'+mes+'\n','err')
+        self.echo.config(state='disabled')
+
+    def echo_dec(self,name,typ,way):
+        if not self.ECHO:return
+        self.echo.config(state='normal')
+        self.echo.insert('end',f"Variable {name} created with type {typ if way =='∊' else chr(8472)+'('+str(typ)+')' }\n",'dec')
+        self.echo.config(state='disabled')
+
+    def echo_del(self,name):
+        if not self.ECHO:return
+        self.echo.config(state='normal')
+        self.echo.insert('end',f"Variable {name} has been destroyed successfully\n",'dec')
+        self.echo.config(state='disabled')
+    
+    def echo_affect(self,name,value):
+        if not self.ECHO:return
+        self.echo.config(state='normal')
+        self.echo.insert('end',f"Variable {name} has recieved the value : {value }\n",'dec')
+        self.echo.config(state='disabled')
+
+    def echo_inf(self,inf):
+        #if not self.ECHO:return
+        self.echo.config(state='normal')
+        self.echo.insert('end',inf+'\n','inf')
+        self.echo.config(state='disabled')
+
+    def eval_expr(self,l:list[str]):
+        
+        l_=[]
+        for i,elt in enumerate(l):
+            res=default_types.attribute_type(elt)
+            if type(res) != type(None):
+                l_.append(res)
+            else:
+                l_.append(elt)
+
+
+        if len(l_) == 1 and type(l_[0]) != str:
+            return l_[0]
+
+        if len(l)==1 and l[0][0]=='{' and l[0][-1]=='}':
+            try:   
+                res=evaluations.evaluate_sets(l[0],self.VAR,self.DICT,self.ALIAS,self.FUNC)#,self.FUNCTIONS)
+                return res
+            except Exception as err:
+                print(err)
+                return 'err'
+        else:
+            l_=evaluations.create_evaluating_list(l)
+            evaluations.typize(l_)
+            try:
+                res=evaluations.evaluate(l_,self.VAR,self.DICT,self.FUNC,self.ALIAS)#,stdout=StdRedirector(self.echo))
+                return res
+            except ZeroDivisionError:
+                return '0err'
+    
+    def for_all_ex(self,code):
+        assert len(code)==6 and code[2]=='∊' and code[4]==':'
+        if not default_types.ZIntervalle.recognize(code[3]) and code[3] != 'ℕ' and not (code[3] in self.VAR and (type(self.VAR[code[3]][0]) in (default_types.Parts,) or self.VAR[code[3]][0]==default_types.S)):raise
+        
+        if code[3] == 'ℕ':
+            Ens=default_types.Niterator()
+        elif code[3] in self.VAR:
+            Ens=self.VAR[code[3]][1]
+        else:
+            Ens = default_types.ZIntervalle.from_str(code[3])
+        
+        if code[1] in self.VAR:raise
+
+        if code[3] == 'ℕ':
+            self.VAR[code[1]] = [default_types.N,None]
+        elif type(Ens)== default_types.ZIntervalle:
+            if (Ens.binf >=default_types.N(0)).v :
+                self.VAR[code[1]] = [default_types.N,None]
+            else:
+                self.VAR[code[1]] = [default_types.Z,None]
+        elif type(Ens) == default_types.S:
+            self.VAR[code[1]] = [default_types.S,None]
+        else:
+            #Ens:SET
+            self.VAR[code[1]] = [Ens.type,None]
+        
+        assert len(code[5])>2 and code[5][0]=='\\' and code[5][-1]=='/'
+        run_code= code[5][1:-1]
+        #run_code = _parser_.parse(run_code)
+        self.BOUCLE=True
+        for i in Ens:
+            assert self.BOUCLE
+            self.VAR[code[1]][1]=i
+
+            try:
+                res = self.execute(run_code,flag=False)
+            except error.Halt:
+                res=True
+            except error.EOI:continue
+            if res ==error.EOI:
+                continue
+            if res == None or not self.BOUCLE:return 
+            if res :
+                self.STOP=True
+                self.BOUCLE=False
+                return
+            
+    def if_ex(self,code):
+        expr=[]
+        assert code[0]=='➣'
+        i=1
+        ex=False
+        while i <len(code):
+            elt = code[i]
+
+            if ex:
+                ex=False
+                res =self.eval_expr(expr)
+                if type(res) != default_types.B:raise
+                if res.v :
+                    assert elt[0]=='\\' and elt[-1]=='/'
+                    run_code = elt[1:-1]
+                    res = self.execute(run_code,flag=False)
+                    if res == error.Halt:
+                        raise error.Halt
+                    if res == error.EOI:
+                        return error.EOI
+                    if res :
+                        self.STOP=True
+                    return
+            elif elt == '⇝':
+                ex=True
+            elif elt == '➣':
+                expr=[]
+            else:
+                expr.append(elt)
+
+            i+=1
+
+    def dict_ex(self,nom,t1,t2):
+        """Créer un dictionaire"""
+
+        assert nom not in self.VAR and nom not in self.DICT and nom not in self.FUNC
+        assert default_types.recognize_type(t1)and default_types.recognize_type(t2)
+        t1,t2 = default_types.type_from_str(t1),default_types.type_from_str(t2)
+        self.DICT[nom]=[(t1,t2),{}]
+
+    def dict_affect(self,code):
+        assert code[1] == '≔'
+        obj = code[0]
+        assert obj.count('$')==1
+        obj = obj.split('$')
+        if obj[0] not in self.DICT:
+            self.raise_error("NameError",f"Unable to affect value to {obj[0]}, it does not exist.")
+            return 
+        
+        k = default_types.attribute_type(obj[1])
+        k =convert(k,self.DICT[obj[0]][0][0])
+        v = self.eval_expr(code[2:])
+        v = convert(v,self.DICT[obj[0]][0][1])
+
+        self.DICT[obj[0]][1][k]=v
 
 
 def valid_name(ch:str):
@@ -470,7 +832,5 @@ def valid_name(ch:str):
         return False
     if ch[0].isnumeric():return False
     return all(car in '1234567890AZERTYUIOPQSDFGHJKLMWXCVBNazertyuiopqsdfghjklmwxcvbn_\'₀₁₂₃₄₅₆₇₈₉' for  car in ch)
-
-
 
 #refaire des verifs puis faire les fonctions.

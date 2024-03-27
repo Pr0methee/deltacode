@@ -1,7 +1,7 @@
 from tkinter import *
 import tkinter.scrolledtext as scrolledtext
 import tkinter.filedialog as filedialog
-import compilator,_parser_,Executor,os
+import compilator,_parser_,Executor,os,cProfile
 
 class App(Tk):
     def __init__(self):

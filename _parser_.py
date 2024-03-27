@@ -22,7 +22,11 @@ def parse_in_sentences(ch:str):
     l=[]
     s=False;sc=0;mot='';a=False;d=False#string,sous-code,actual word,arobas, dièse ?
     for car in ch:
-        if car =='#':d=not d
+        if car =='#':
+            d=not d
+            if not d:
+                l.append(mot+'#')
+                mot=''
         if car =='"':s=not s
         if car =='\\' and not s:sc+=1
         if car =='/' and not s :sc-=1
@@ -41,6 +45,7 @@ def parse_in_sentences(ch:str):
             a=True
             mot='@'
         else:
+            if car =='#' and not d:continue
             mot+=car
     if mot != '' and mot[0]==mot[-1]=='#':
         l.append(mot)

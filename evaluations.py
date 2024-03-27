@@ -1,4 +1,4 @@
-import default_types,_parser_,Functions
+import default_types,_parser_,Applications
 from default_functions import *
 
 def typize(l:list):
@@ -285,7 +285,7 @@ def exec_func_dict(ch:str,variables,dictionary,function):#,stdout):
                     l_.append(_l_[0])
             assert len(l_)==1
             return dictionary[f][1][l_[0]]
-        assert (f in function and type(function[f])!=Functions.Applications) or f in DEFAULT_FUNCTIONS
+        assert (f in function and type(function[f])!=Applications.Applications) or f in DEFAULT_FUNCTIONS
         l_=[]
 
         for elt in a[1:-1].split(','):
@@ -306,7 +306,7 @@ def exec_func_dict(ch:str,variables,dictionary,function):#,stdout):
     assert ch.count('⟨') == ch.count('⟩')==ch.count('$')+1==1 and ch[-1]=='⟩'
     f,a = ch[:-1].split('⟨')
     a=a.replace(';',',')
-    assert f in function and type(function[f])==Functions.Applications
+    assert f in function and type(function[f])==Applications.Applications
     f="function['"+f+"']"
     l_args = []
     for elt in a.split(','):
