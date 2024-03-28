@@ -463,7 +463,7 @@ class Executor:
     def func_call(self,f,*args):
         assert f in self.FUNCTIONS
         self.FUNCTIONS[f].set_global_obj(self.VARIABLES,self.FUNCTIONS,self.ALIAS,self.DICTIONARY)
-        self.FUNCTIONS[f](*[self.VARIABLES[elt] for elt in args])
+        self.FUNCTIONS[f](*[self.VARIABLES[elt][1] for elt in args])
 
 
 
