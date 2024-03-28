@@ -327,7 +327,7 @@ class Executor:
 
         if len(l)==1 and l[0][0]=='{' and l[0][-1]=='}':
             try:   
-                res=evaluations.evaluate_sets(l[0],self.VARIABLES,self.DICTIONARY,self.ALIAS,self.FUNCTIONS)#,self.FUNCTIONS)
+                res=evaluations.evaluate_sets(l[0],self.VARIABLES,self.DICTIONARY,self.ALIAS,self.FUNCTIONS,self)#,self.FUNCTIONS)
                 return res
             except Exception as err:
                 print(err)
@@ -336,7 +336,7 @@ class Executor:
             l_=evaluations.create_evaluating_list(l)
             evaluations.typize(l_)
             try:
-                res=evaluations.evaluate(l_,self.VARIABLES,self.DICTIONARY,self.FUNCTIONS,self.ALIAS)#,stdout=StdRedirector(self.echo))
+                res=evaluations.evaluate(l_,self.VARIABLES,self.DICTIONARY,self.FUNCTIONS,self.ALIAS,self)#,stdout=StdRedirector(self.echo))
                 return res
             except ZeroDivisionError:
                 return '0err'
@@ -714,7 +714,7 @@ class FuncExecutor:
 
         if len(l)==1 and l[0][0]=='{' and l[0][-1]=='}':
             try:   
-                res=evaluations.evaluate_sets(l[0],self.VAR,self.DICT,self.ALIAS,self.FUNC)#,self.FUNCTIONS)
+                res=evaluations.evaluate_sets(l[0],self.VAR,self.DICT,self.ALIAS,self.FUNC,self)#,self.FUNCTIONS)
                 return res
             except Exception as err:
                 print(err)
@@ -723,7 +723,7 @@ class FuncExecutor:
             l_=evaluations.create_evaluating_list(l)
             evaluations.typize(l_)
             try:
-                res=evaluations.evaluate(l_,self.VAR,self.DICT,self.FUNC,self.ALIAS)#,stdout=StdRedirector(self.echo))
+                res=evaluations.evaluate(l_,self.VAR,self.DICT,self.FUNC,self.ALIAS,self)#,stdout=StdRedirector(self.echo))
                 return res
             except ZeroDivisionError:
                 return '0err'
