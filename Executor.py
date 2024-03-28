@@ -460,6 +460,11 @@ class Executor:
         self.FUNCTIONS[code[0][0]].set_code(code[2:])
         self.FUNCTIONS[code[0][0]].set_global_obj(self.VARIABLES,self.FUNCTIONS,self.ALIAS,self.DICTIONARY)
 
+    def func_call(self,f,*args):
+        assert f in self.FUNCTIONS
+        self.FUNCTIONS[f].set_global_obj(self.VARIABLES,self.FUNCTIONS,self.ALIAS,self.DICTIONARY)
+        self.FUNCTIONS[f](*[self.VARIABLES[elt] for elt in args])
+
 
 
 class ModuleExecutor:
