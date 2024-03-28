@@ -8,18 +8,19 @@ def isfloat(ch:str):
         return False
 #div euclidienne : '├'
 
+#retrouver ancien S et B
 table = {
     "\exists":"∃",
     "\in":"∊",
     "\\forall":"∀",
     '\empty':"∅",
     "\include":"⊆",
-    '\S':"𝕊",
+    '\S':"§",
     '\\N':"ℕ",
     '\\Z':"ℤ",
     '\\R':"ℝ",
     '\\C':"ℂ",
-    '\\B':'𝔹',
+    '\\B':'',
     "\False":'⊥',
     "\True":"⊤",
     "\i":'ι',
