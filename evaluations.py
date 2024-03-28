@@ -288,7 +288,7 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
         assert (f in function and type(function[f])!=Applications.Applications) or f in DEFAULT_FUNCTIONS
         l_=[]
 
-        if f in functions:
+        if f in function:
             for elt in a[1:-1].split(','):
                 if elt in variables:
                     l_.append(elt) 
