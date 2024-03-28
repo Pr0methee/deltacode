@@ -26,21 +26,21 @@ def create_evaluating_list(expr:list):
             eval('l_'+'[-1]'*depth+'.append(thing)')
     return l_
 
-def evaluate(l:list,variables,dictionary,function,alias,k=0):#,stdout=sys.__stdout__):
+def evaluate(l:list,variables,dictionary,function,alias,ex,k=0):#,stdout=sys.__stdout__):
     simpl(l)
     assert type(k)==int
     for i,elt in enumerate(l):
         if type(elt)==list:
-            evaluate(elt,variables,dictionary,alias,function,k+1)
+            evaluate(elt,variables,dictionary,function,alias,ex,k+1)
             if len(l[i])==1:l[i]=l[i][0]
         elif type(elt)==str and elt in variables:
             l[i] = variables[elt][1]
         elif type(elt)==str and elt in alias:
             l[i] = variables[alias[elt]][1]
         elif type(elt)==str and elt[0]=='{' and elt[-1]=='}':
-            l[i]=evaluate_sets(elt,variables,dictionary,alias,function)
+            l[i]=evaluate_sets(elt,variables,dictionary,alias,function,ex)
         elif type(elt) == str and elt not in _parser_.kw:
-            l[i] = exec_func_dict(elt,variables,dictionary,function)#,stdout=stdout)
+            l[i] = exec_func_dict(elt,variables,dictionary,function,ex)#,stdout=stdout)
 
     for i,elt in enumerate(l):
         if type(elt) != str: continue
@@ -218,13 +218,13 @@ def simpl(l:list):
                 del l[i-1]
                 del l[i-1]
 
-def evaluate_sets(ch,variables,dictionary,alias,functions):
+def evaluate_sets(ch,variables,dictionary,alias,functions,ex):
     s=set()
     for elt in default_types.SET.listify(ch):
         l_elt = _parser_.parse_a_sentence(elt)
         eval_l = create_evaluating_list(l_elt)
         typize(eval_l)
-        res = evaluate(eval_l,variables,dictionary,functions,alias)
+        res = evaluate(eval_l,variables,dictionary,functions,alias,ex)
         s.add(res)
 
     t = {type(elt) for elt in s}
@@ -245,7 +245,7 @@ def evaluate_sets(ch,variables,dictionary,alias,functions):
         S.add(elt)
     return S
 
-def exec_func_dict(ch:str,variables,dictionary,function):#,stdout):
+def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
     f,a='',''
     flag=True#complete func name
     if '$' in ch : 
@@ -300,7 +300,8 @@ def exec_func_dict(ch:str,variables,dictionary,function):#,stdout):
         
         a = '('+','.join(l_)+')'
         if f in function:
-            f='function["'+f+'"]'
+            #f='function["'+f+'"]'
+            return ex.func_call(f,*l_)
         return eval(f+a)
 
     assert ch.count('⟨') == ch.count('⟩')==ch.count('$')+1==1 and ch[-1]=='⟩'
