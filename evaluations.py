@@ -288,6 +288,16 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
         assert (f in function and type(function[f])!=Applications.Applications) or f in DEFAULT_FUNCTIONS
         l_=[]
 
+        if f in functions:
+            for elt in a[1:-1].split(','):
+                if elt in variables:
+                    l_.append(elt) 
+                elif elt=='':
+                    continue
+                else:
+                    raise
+            return ex.func_call(f,*l_)
+            
         for elt in a[1:-1].split(','):
             if default_types.recognize_type(elt):
                 l_.append('"'+elt+'"')
@@ -299,9 +309,6 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
                 raise
         
         a = '('+','.join(l_)+')'
-        if f in function:
-            #f='function["'+f+'"]'
-            return ex.func_call(f,*l_)
         return eval(f+a)
 
     assert ch.count('⟨') == ch.count('⟩')==ch.count('$')+1==1 and ch[-1]=='⟩'
