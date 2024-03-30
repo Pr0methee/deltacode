@@ -50,34 +50,47 @@ def evaluate(l:list,variables,dictionary,function,alias,ex,k=0):#,stdout=sys.__s
             del l[i]
 
     #execution * et / en m^ temps !! 
-    for i,elt in enumerate(l):
-        if type(elt) != str: continue
+    i=0
+    while i < len(l):
+        elt=l[i]
+        if type(elt)!=str:
+            i+=1
+            continue
         if elt == '×':
-            l[i-1] = l[i-1]*l[i+1]
+            l[i-1]=l[i-1]*l[i+1]
             del l[i]
             del l[i]
         elif elt == '÷':
-            l[i-1] = l[i-1]/l[i+1]
+            l[i-1]=l[i-1]/l[i+1]
             del l[i]
             del l[i]
+        else:
+            i+=1
 
-    for i,elt in enumerate(l):
-        if type(elt) != str: continue
+    i=0
+    while i < len(l):
+        elt=l[i]
+        if type(elt)!=str:
+            i+=1
+            continue
         if elt == '+':
-            if i==0:
+            if i == 0:
                 del l[i]
             else:
-                l[i-1] = l[i-1]+l[i+1]
+                l[i-1]=l[i-1]+l[i+1]
                 del l[i]
                 del l[i]
         elif elt == '-':
-            if i==0:
+            if i == 0:
                 del l[i]
                 l[i]=-l[i]
             else:
-                l[i-1] = l[i-1]-l[i+1]
+                l[i-1]=l[i-1]-l[i+1]
                 del l[i]
                 del l[i]
+        else:
+            i+=1
+
 
     traiter(l,'|',lambda b1,b2:b1.div(b2))
     traiter(l,'⩾',lambda b1,b2 : b1 >= b2)
@@ -125,18 +138,23 @@ def evaluate(l:list,variables,dictionary,function,alias,ex,k=0):#,stdout=sys.__s
                     sc[i]= default_types.Parts(l_[i].type)
 
             l[0]=default_types.Tuple(l_,default_types.CrossSet(*sc))
-
     if k==0:
         return l[0] if len(l)==1 else 'err' 
 
 def traiter(l,car,fct):
     "cas opérateur associatif a gauche"
-    for i, elt in enumerate(l):
-        if type(elt) != str:continue
+    i=0
+    while i < len(l):
+        elt=l[i]
+        if type(elt) != str:
+            i+=1
+            continue
         if elt == car:
             l[i-1] = fct(l[i-1],l[i+1])
             del l[i]
             del l[i]
+        else:
+            i+=1
 
 def transform(ch:str):
     #'(2+3;7)' -> ['(','2','+','3',';','7',')']
@@ -313,15 +331,14 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
 
     assert ch.count('⟨') == ch.count('⟩')==ch.count('$')+1==1 and ch[-1]=='⟩'
     f,a = ch[:-1].split('⟨')
-    a=a.replace(';',',')
     assert f in function and type(function[f])==Applications.Applications
     f="function['"+f+"']"
     l_args = []
-    for elt in a.split(','):
+    for elt in a.split(';'):
         l=_parser_.parse_a_sentence(elt)
         l=create_evaluating_list(l)
         typize(l)
-        if l !=[]:l_args.append(evaluate(l,variables,dictionary,function,{}))
+        if l !=[]:l_args.append(evaluate(l,variables,dictionary,function,{},ex))
     a = ','.join(f"l_args[{i}]" for  i in range(len(l_args)))
     return eval(f+'('+a+')')
 

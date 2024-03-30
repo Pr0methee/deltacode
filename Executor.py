@@ -68,15 +68,12 @@ class Executor:
         
         if name in self.ALIAS:
             name=self.ALIAS[name]
-
         value = self.eval_expr(expr.copy())
         if type(value)==str :
             if value == 'err':
-                self.raise_error('EvaluatingError','')
-                return
+                raise error.EvaluationError(expr)
             elif value == '0err':
-                self.raise_error('ZeroDivisionError',f'Trying to divide by zero while evaluating {"".join(expr)}')
-                return
+                raise error.DividingByZero()
         try:
             value = convert(value,self.VARIABLES[name][0])
         except Exception as err:
@@ -91,17 +88,15 @@ class Executor:
                 gettyp = value.type
             else:
                 gettyp=default_types.TYPES_[type(value)]
-                
-            self.raise_error("TypeError",f"Can't affect {''.join(expr)} to <{name}>, it has the type {gettyp} while it's expected to be a {reqtyp} object")
-            return
+            
+            raise error.TypeError_(expr,name,gettyp,reqtyp)
 
         self.echo_affect(name,value)
         self.VARIABLES[name][1]=value
     
     def suppr_var(self,var):
         if var not in self.VARIABLES:
-            self.raise_error("UnknownVariable",f"Unable to destroy variable {var}, it does not exist.")
-            return
+            raise error.UnknownObject(var)
         
         del self.VARIABLES[var]
         self.echo_del(var)
@@ -138,7 +133,7 @@ class Executor:
             try:
                 h =self.exec(ph)
             except Exception as err:
-                raise err
+                #raise err
                 self.STOP=True
                 if 'name' in dir(err):
                     if err==error.Halt and self.BOUCLE:
@@ -154,7 +149,7 @@ class Executor:
                         return
                     else:
                         err=error.Halt()
-                        self.raise_error(err.name(),str(err))
+                        raise err
                 if h == error.EOI:
                     return error.EOI
 
@@ -261,7 +256,7 @@ class Executor:
                 assert nom not in self.ALIAS
                 assert nom not in self.FUNCTIONS
                 self.FUNCTIONS[nom]=Applications.Applications(nom,t1,t2)
-            case [nom,':',vars,'⟼',return_]:
+            case [nom,':',vars,'⟼',*return_]:
                 if nom not in self.FUNCTIONS:raise
                 f:Applications.Applications = self.FUNCTIONS[nom]
                 f.set_args_name(*vars.split(';'))
@@ -434,8 +429,7 @@ class Executor:
         assert obj.count('$')==1
         obj = obj.split('$')
         if obj[0] not in self.DICTIONARY:
-            self.raise_error("NameError",f"Unable to affect value to {obj[0]}, it does not exist.")
-            return 
+            raise error.NameError(obj[0])
         
         k = default_types.attribute_type(obj[1])
         k =convert(k,self.DICTIONARY[obj[0]][0][0])
@@ -457,13 +451,32 @@ class Executor:
         assert len(code[1]) == 1 and code[1][0][0] == '⟨' and code[1][0][-1] == '⟩'
         args = code[1][0][1:-1].split(';')
         self.FUNCTIONS[code[0][0]].set_args_name(*args)
-        self.FUNCTIONS[code[0][0]].set_code(code[2:])
+        i=2
+        if code[2] == ['@GLOBAL']:
+            self.FUNCTIONS[code[0][0]].set_global()
+            i+=1
+        if code[i][0][0]==code[i][0][-1]=='"':
+            self.FUNCTIONS[code[0][0]].set_doc(code[i][0][1:-1])
+            i+=1
+        assert code[i:]!=[]
+        self.FUNCTIONS[code[0][0]].set_code(code[i:])
         self.FUNCTIONS[code[0][0]].set_global_obj(self.VARIABLES,self.FUNCTIONS,self.ALIAS,self.DICTIONARY)
 
     def func_call(self,f,*args):
         assert f in self.FUNCTIONS
         self.FUNCTIONS[f].set_global_obj(self.VARIABLES,self.FUNCTIONS,self.ALIAS,self.DICTIONARY)
-        self.FUNCTIONS[f](*[self.VARIABLES[elt][1] for elt in args])
+        r=self.FUNCTIONS[f](*[self.VARIABLES[elt][1] for elt in args])
+        if self.FUNCTIONS[f].gl_bal:
+            for k,v in self.FUNCTIONS[f].VAR.items():
+                if k in self.FUNCTIONS[f].arg_names:continue
+                if k[:7]=='GLOBAL·':
+                    self.VARIABLES[k[7:]]=v
+                else:
+                    self.VARIABLES[k]=v
+            self.FUNCTIONS=self.FUNCTIONS[f].FUNC
+            self.ALIAS=self.FUNCTIONS[f].ALIAS
+            self.DICTIONARY=self.FUNCTIONS[f].DICT
+        return r
 
 
 
@@ -519,15 +532,13 @@ class FuncExecutor:
         value = self.eval_expr(expr.copy())
         if type(value)==str :
             if value == 'err':
-                self.raise_error('EvaluatingError','')
-                return
+                raise error.EvaluationError(*expr)
             elif value == '0err':
-                self.raise_error('ZeroDivisionError',f'Trying to divide by zero while evaluating {"".join(expr)}')
-                return
+                raise error.DividingByZero()
         try:
             value = convert(value,self.VAR[name][0])
         except Exception as err:
-            if type(self.VAR[name][0])==default_types.CrossSet or type(self.VARIABLES[name][0]) == default_types.Parts:
+            if type(self.VAR[name][0])==default_types.CrossSet or type(self.VAR[name][0]) == default_types.Parts:
                 reqtyp=self.VAR[name][0]
             else:
                 reqtyp = default_types.TYPES_[self.VAR[name][0]]
@@ -538,17 +549,15 @@ class FuncExecutor:
                 gettyp = value.type
             else:
                 gettyp=default_types.TYPES_[type(value)]
-                
-            self.raise_error("TypeError",f"Can't affect {''.join(expr)} to <{name}>, it has the type {gettyp} while it's expected to be a {reqtyp} object")
-            return
+            
+            raise error.TypeError_(expr,name,gettyp,reqtyp)
 
         self.echo_affect(name,value)
         self.VAR[name][1]=value
     
     def suppr_var(self,var):
         if var not in self.VAR:
-            self.raise_error("UnknownVariable",f"Unable to destroy variable {var}, it does not exist.")
-            return
+            raise error.UnknownObject(var)
         
         del self.VAR[var]
         self.echo_del(var)
@@ -564,7 +573,7 @@ class FuncExecutor:
         else:
             self.ALIAS[name]=ref
 
-    def execute(self):#,echoflag=True):
+    def execute(self,code=''):#,echoflag=True):
 
         defstdout = sys.stdout
         defstdin = sys.stdin
@@ -573,11 +582,12 @@ class FuncExecutor:
         sys.stdin = StdRedirector(self.echo)
 
         #Ctrl+C : break self.echo.bind("")
-
+        if code=='':
+            code=self.code
         self.STOP =False
         t=time.time()
         self.echo.bind_all('<Control-c>',self.raise_end)
-        for i,ph in enumerate(self.code):
+        for i,ph in enumerate(code):
             try:
                 h =self.exec(ph)
             except Exception as err:
@@ -586,7 +596,7 @@ class FuncExecutor:
                     if err==error.Halt and self.BOUCLE:
                         self.BOUCLE=False
                         return
-                    self.raise_error(err.name(),str(err))
+                    self.raise_error(err.name,str(err))
                 else:
                     raise err
             try:
@@ -596,7 +606,7 @@ class FuncExecutor:
                         return
                     else:
                         err=error.Halt()
-                        self.raise_error(err.name(),str(err))
+                        raise err
                 if h == error.EOI:
                     return error.EOI
 
@@ -652,9 +662,11 @@ class FuncExecutor:
                 r=self.if_ex(ph)
                 if r == error.EOI:return r
             case ['⟼',*expr]:
-                r=self.eval_expr(expr)
-                self.return_obj=r
-                self.returned=True
+                if expr == []:self.returned=True
+                else:
+                    r=self.eval_expr(expr)
+                    self.return_obj=r
+                    self.returned=True
             case _:
                 assert all([elt not in _parser_.kw for elt in ph])
                 self.eval_expr(ph)
@@ -763,7 +775,7 @@ class FuncExecutor:
             self.VAR[code[1]][1]=i
 
             try:
-                res = self.execute(run_code,flag=False)
+                res = self.execute(run_code)
             except error.Halt:
                 res=True
             except error.EOI:continue
@@ -789,11 +801,11 @@ class FuncExecutor:
                 if type(res) != default_types.B:raise
                 if res.v :
                     assert elt[0]=='\\' and elt[-1]=='/'
-                    run_code = elt[1:-1]
-                    res = self.execute(run_code,flag=False)
-                    if res == error.Halt:
+                    run_code = _parser_.parse(elt[1:-1])
+                    res = self.execute(run_code)
+                    if res is error.Halt:
                         raise error.Halt
-                    if res == error.EOI:
+                    if res is error.EOI:
                         return error.EOI
                     if res :
                         self.STOP=True
@@ -821,8 +833,7 @@ class FuncExecutor:
         assert obj.count('$')==1
         obj = obj.split('$')
         if obj[0] not in self.DICT:
-            self.raise_error("NameError",f"Unable to affect value to {obj[0]}, it does not exist.")
-            return 
+            raise error.NameError(obj[0])
         
         k = default_types.attribute_type(obj[1])
         k =convert(k,self.DICT[obj[0]][0][0])
@@ -831,7 +842,21 @@ class FuncExecutor:
 
         self.DICT[obj[0]][1][k]=v
 
-
+    def func_call(self,f,*args):
+        assert f in self.FUNC
+        self.FUNC[f].set_global_obj(self.VAR,self.FUNC,self.ALIAS,self.DICT)
+        r=self.FUNC[f](*[self.VAR[elt][1] for elt in args])
+        if self.FUNC[f].gl_bal:
+            for k,v in self.FUNC[f].VAR.items():
+                if k in self.FUNC[f].arg_names:continue
+                if k[:7]=='GLOBAL·':
+                    self.VAR[k[7:]]=v
+                else:
+                    self.VAR[k]=v
+            self.FUNC=self.FUNC[f].FUNC
+            self.ALIAS=self.FUNC[f].ALIAS
+            self.DICT=self.FUNC[f].DICT
+        return r
 def valid_name(ch:str):
     if ch =='' or ' ' in ch:
         return False

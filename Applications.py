@@ -20,6 +20,7 @@ class Applications:
         self.expr =expr
     
     def __call__(self,*vals):
+        print(len(vals))
         if self.types[0] == default_types.Parts(default_types.EmptySet):
             assert vals==()
             ARGS={}
@@ -40,20 +41,20 @@ class Applications:
                 cond,expr=cut(case)
                 r = evaluations.create_evaluating_list(cond)
                 evaluations.typize(r)
-                r = evaluations.evaluate(r,ARGS,{},FUNC,{})
+                r = evaluations.evaluate(r,ARGS,{},FUNC,{},None)
                 if type(r) != default_types.B:
                     raise error.TypeError()
                 if r.v:
                     
                     l=evaluations.create_evaluating_list(expr)
                     evaluations.typize(l)
-                    r = evaluations.evaluate(l,ARGS,{},FUNC,{})#liste parsee, transformee en evaluating list, typee
+                    r = evaluations.evaluate(l,ARGS,{},FUNC,{},None)#liste parsee, transformee en evaluating list, typee
                     return default_functions.convert(r,self.types[1])
             raise
         else:
             l=evaluations.create_evaluating_list(self.expr)
             evaluations.typize(l)
-            r = evaluations.evaluate(l,ARGS,{},FUNC,{})#liste parsee, transformee en evaluating list, typee
+            r = evaluations.evaluate(l,ARGS,{},FUNC,{},None)#liste parsee, transformee en evaluating list, typee
         return default_functions.convert(r,self.types[1])
     
     def __str__(self) -> str:

@@ -123,8 +123,6 @@ class App(Tk):
         
         for k,v in d.items():
             for elt in v:
-                #if k == 'B':self.text.replace(str(elt[0])+'.'+str(elt[1])+'-1c',str(elt[0])+'.'+str(elt[1]),'B')
-                #if k == 'i':self.text.replace(str(elt[0])+'.'+str(elt[1])+'-1c',str(elt[0])+'.'+str(elt[1]),'i')
                 self.text.tag_add(k,str(elt[0])+'.'+str(elt[1])+'-1c',str(elt[0])+'.'+str(elt[1]))    
 
     def Run(self):      
@@ -134,15 +132,15 @@ class App(Tk):
     
     def saveas(self):
         self.compile()
-        f = filedialog.asksaveasfilename(defaultextension='.e',filetypes=[('Compiled E files','.e'),('Uncompiled E files','.eb')])
+        f = filedialog.asksaveasfilename(defaultextension='.d',filetypes=[('Compiled delta files','.d'),('Uncompiled delta files','.du')])
         with open(f,'wb') as file:
-            if os.path.splitext(f)[1]=='.e':
+            if os.path.splitext(f)[1]=='.d':
                 file.write(bytes(self.text.get(2.0,END),'utf-8'))
             else:
                 file.write(bytes(compilator.decompile(self.text.get(2.0,END)),'utf-8'))
 
     def open(self):
-        f = filedialog.askopenfilename(defaultextension='.e',filetypes=[('Compiled E files','.e'),('Uncompiled E files','.eb')])
+        f = filedialog.askopenfilename(defaultextension='.d',filetypes=[('Compiled delta files','.d'),('Uncompiled delta files','.du')])
         with open(f,'rb') as file:
             r=file.read().decode('utf-8')
             self.text.insert(END,r)

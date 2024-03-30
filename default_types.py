@@ -612,7 +612,6 @@ class SET:
         return r
     
     def __contains__(self,elt):
-        print('__contains__ called')
         for k in self:
             if k==elt:
                 return True

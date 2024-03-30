@@ -8,7 +8,11 @@ class Function:
         self.gl_bal=False
         self.arg_names=()
         self.echo=echo
+        self.__doc__=''
     
+    def set_doc(self,ch:str):
+        self.__doc__=ch
+
     def set_args_name(self,*noms:str):
         if self.types[0] == default_types.Parts(default_types.EmptySet):
            assert noms==('∅',)
@@ -22,6 +26,17 @@ class Function:
 
     def set_code(self,code):
         self.code=code #liste deja parsee
+        
+        r = "#\n"
+        r+=self.name + ' : '+default_types.stringify(self.types[0]) + ' ⟶ '+default_types.stringify(self.types[1]) + '.\n'
+        r +='⟨'+';'.join(self.arg_names)+'⟩.\n'
+        l=[]
+        for elt in self.code:
+            l.append(' '.join(elt)+'.')
+        r += '\n'.join(l)
+        r+='\n#'
+        if self.__doc__=='':self.__doc__=r
+        self.__repr = r
 
     def set_global_obj(self,var,func,alias,dic):
         self.VAR,self.FUNC,self.ALIAS,self.DICT={},{},{},{}
@@ -47,18 +62,14 @@ class Function:
 
         ex = Executor.FuncExecutor(self.code,self.echo,self.VAR,self.FUNC,self.ALIAS,self.DICT)#il faut le coder !
         res=ex.execute()
+        if self.types[1]==default_types.Parts(default_types.EmptySet):
+            if type(res) == default_types.EmptySet:
+                return res
+            raise 
         return default_functions.convert(res,self.types[1])
 
     def __str__(self) -> str:
-        r = "#\n"
-        r+=self.name + ' : '+default_types.stringify(self.types[0]) + ' ⟶ '+default_types.stringify(self.types[1]) + '.\n'
-        r +='⟨'+';'.join(self.arg_names)+'⟩.\n'
-        l=[]
-        for elt in self.code:
-            l.append(' '.join(elt)+'.')
-        r += '\n'.join(l)
-        r+='\n#'
-        return r
+        return self.__doc__
     
     def __repr__(self) -> str:
-        return self.__str__()
+        return self.__repr
