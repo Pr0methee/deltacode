@@ -739,7 +739,6 @@ class Tuple:
         if type(__value) != Tuple:return B(True)
         return B(self.v!=__value.v)
 
-
 class Parts:
     def __init__(self,t):
         assert t in (N,Z,R,C,B,S) or type(t)==CrossSet  or type(t)==Parts or t == EmptySet
@@ -767,8 +766,6 @@ class Parts:
     def __hash__(self) -> int:
         return hash(str(self))
 
-
-
 class RIntervalle:
     def __init__(self,binf:float|int,bsup:float|int):
         self.binf = binf
@@ -780,6 +777,7 @@ class RIntervalle:
 class ZIntervalle:
     def __init__(self,binf:Z,bsup:Z):
         self.binf = binf
+        #if self.binf >= N(0)
         self.bsup = bsup
     
     def __in(self,v):
@@ -797,14 +795,16 @@ class ZIntervalle:
         return cls(*[Z.from_str(elt) for elt in ch[1:-1].split(';')])
     
     def __iter__(self):
-        if (self.binf >=N(0)).v:self.binf = N(self.binf.value)
-        self.i = self.binf-N(1)
+        if (self.binf >=N(0)).v:
+            
+            self.binf = N(self.binf.value)
+        self.i = self.binf
         return self
     
     def __next__(self):
-        if (self.i <self.bsup).v:
-            self.i+=Z(1)
-            return self.i
+        if (self.i <=self.bsup).v:
+            self.i+=N(1)
+            return self.i-N(1)
         else:raise StopIteration
 
 

@@ -139,6 +139,8 @@ class Executor:
                     if err==error.Halt and self.BOUCLE:
                         self.BOUCLE=False
                         return
+                    if err == error.WrongSyntax and str(err)=="This sentence is syntaxly incorrect.":
+                        err=error.WrongSyntax(ph)
                     self.raise_error(err.name(),str(err))
                 else:
                     raise err
@@ -249,12 +251,10 @@ class Executor:
                 r=self.if_ex(ph)
                 if r == error.EOI:return r
             case [nom,':',t1,'⟶',t2]:
-                assert default_types.recognize_type(t1)
-                assert default_types.recognize_type(t2)
-                assert nom not in self.VARIABLES
-                assert nom not in self.DICTIONARY
-                assert nom not in self.ALIAS
-                assert nom not in self.FUNCTIONS
+                if not default_types.recognize_type(t1) or not default_types.recognize_type(t2):
+                    raise error.WrongSyntax()
+                if nom in self.VARIABLES or nom in self.DICTIONARY or nom in self.ALIAS or nom in self.FUNCTIONS:
+                    raise error.AlreadyExistsError(name)
                 self.FUNCTIONS[nom]=Applications.Applications(nom,t1,t2)
             case [nom,':',vars,'⟼',*return_]:
                 if nom not in self.FUNCTIONS:raise
@@ -264,7 +264,8 @@ class Executor:
             case [thing] if len(thing) >2 and thing[0]==thing[-1]=='#':
                 self.create_function(thing)
             case _:
-                assert all([elt not in _parser_.kw for elt in ph])
+                if any([elt in _parser_.kw for elt in ph]):
+                    raise error.WrongSyntax()
                 self.eval_expr(ph)
         
         
@@ -273,7 +274,6 @@ class Executor:
             if type(res) != default_types.B and type(res) != type(None):
                 raise TypeError
             if type(res)==default_types.B and res.equiv(default_types.B(True)).v ==False:
-                #self.raise_error("AssertionError",f"The assertion '{''.join(tests)}' has failled. ")
                 raise error.WrongAssertion(tests)
 
     def raise_error(self,err,mes):
@@ -307,7 +307,6 @@ class Executor:
         self.echo.config(state='disabled')
 
     def eval_expr(self,l:list[str]):
-        
         l_=[]
         for i,elt in enumerate(l):
             res=default_types.attribute_type(elt)
@@ -328,6 +327,7 @@ class Executor:
                 print(err)
                 return 'err'
         else:
+            
             l_=evaluations.create_evaluating_list(l)
             evaluations.typize(l_)
             try:
@@ -337,7 +337,7 @@ class Executor:
                 return '0err'
     
     def for_all_ex(self,code):
-        assert len(code)==6 and code[2]=='∊' and code[4]==':'
+        if not (len(code)==6 and code[2]=='∊' and code[4]==':'):raise error.WrongSyntax()
         if not default_types.ZIntervalle.recognize(code[3]) and code[3] != 'ℕ' and not (code[3] in self.VARIABLES and (type(self.VARIABLES[code[3]][0]) in (default_types.Parts,) or self.VARIABLES[code[3]][0]==default_types.S)):raise
         
         if code[3] == 'ℕ':
@@ -362,7 +362,7 @@ class Executor:
             #Ens:SET
             self.VARIABLES[code[1]] = [Ens.type,None]
         
-        assert len(code[5])>2 and code[5][0]=='\\' and code[5][-1]=='/'
+        if  not(len(code[5])>2 and code[5][0]=='\\' and code[5][-1]=='/'):raise error.WrongSyntax()
         run_code= code[5][1:-1]
         #run_code = _parser_.parse(run_code)
         self.BOUCLE=True
@@ -385,7 +385,7 @@ class Executor:
             
     def if_ex(self,code):
         expr=[]
-        assert code[0]=='➣'
+        if code[0]!='➣':raise error.WrongSyntax()
         i=1
         ex=False
         while i <len(code):
@@ -396,7 +396,7 @@ class Executor:
                 res =self.eval_expr(expr)
                 if type(res) != default_types.B:raise
                 if res.v :
-                    assert elt[0]=='\\' and elt[-1]=='/'
+                    if not (elt[0]=='\\' and elt[-1]=='/'):raise error.WrongSyntax()
                     run_code = elt[1:-1]
                     res = self.execute(run_code,flag=False)
                     if res == error.Halt:
@@ -418,15 +418,17 @@ class Executor:
     def dict_ex(self,nom,t1,t2):
         """Créer un dictionaire"""
 
-        assert nom not in self.VARIABLES and nom not in self.DICTIONARY and nom not in self.FUNCTIONS
-        assert default_types.recognize_type(t1)and default_types.recognize_type(t2)
+        if nom in self.VARIABLES or nom in self.DICTIONARY or nom in self.FUNCTIONS :
+            raise error.AlreadyExistsError(nom)
+        if not (default_types.recognize_type(t1)):raise error.TypeError(t1)
+        if not (default_types.recognize_type(t2)):raise error.TypeError(t2)
         t1,t2 = default_types.type_from_str(t1),default_types.type_from_str(t2)
         self.DICTIONARY[nom]=[(t1,t2),{}]
 
     def dict_affect(self,code):
-        assert code[1] == '≔'
+        if code[1] != '≔': raise error.WrongSyntax()
         obj = code[0]
-        assert obj.count('$')==1
+        if obj.count('$')!=1 : raise error.WrongSyntax()
         obj = obj.split('$')
         if obj[0] not in self.DICTIONARY:
             raise error.NameError(obj[0])
@@ -443,7 +445,7 @@ class Executor:
         code=_parser_.parse(code)
         assert len(code)>2
         assert len(code[0])==5
-        assert code[0][0] not in self.VARIABLES and code[0][0] not in self.FUNCTIONS
+        assert code[0][0] not in self.VARIABLES and code[0][0] not in self.FUNCTIONS and code[0][0] not in self.ALIAS and code[0][0] not in self.DICTIONARY
         assert code[0][1]==':' and code[0][3]== '⟶'
         assert default_types.recognize_type(code[0][2]) and default_types.recognize_type(code[0][4])
 

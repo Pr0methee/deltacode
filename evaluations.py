@@ -1,4 +1,4 @@
-import default_types,_parser_,Applications
+import default_types,_parser_,Applications,error
 from default_functions import *
 
 def typize(l:list):
@@ -41,7 +41,6 @@ def evaluate(l:list,variables,dictionary,function,alias,ex,k=0):#,stdout=sys.__s
             l[i]=evaluate_sets(elt,variables,dictionary,alias,function,ex)
         elif type(elt) == str and elt not in _parser_.kw:
             l[i] = exec_func_dict(elt,variables,dictionary,function,ex)#,stdout=stdout)
-
     for i,elt in enumerate(l):
         if type(elt) != str: continue
         if elt == '^':
@@ -251,7 +250,8 @@ def evaluate_sets(ch,variables,dictionary,alias,functions,ex):
         if typ in t:
             t = {elt if elt != typ else default_types.INCLUSIONS[typ][0] for elt in t}
     
-    assert len(t)==1
+    if len(t)!=1:
+        raise error.WrongSyntax()
 
     t=list(t)
     if t[0]==default_types.Tuple:
@@ -267,7 +267,8 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
     f,a='',''
     flag=True#complete func name
     if '$' in ch : 
-        assert '⟨' not in ch
+        if '⟨' in ch:
+            raise error.WrongSyntax()
 
         ch_ =""
 
@@ -301,9 +302,10 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
                     _l_ = [elt]
                     typize(_l_)
                     l_.append(_l_[0])
-            assert len(l_)==1
+            if not len(l_)==1:raise error.WrongSyntax()
             return dictionary[f][1][l_[0]]
-        assert (f in function and type(function[f])!=Applications.Applications) or f in DEFAULT_FUNCTIONS
+        if not((f in function and type(function[f])!=Applications.Applications) or f in DEFAULT_FUNCTIONS):
+            raise error.WrongSyntax()
         l_=[]
 
         if f in function:
@@ -329,9 +331,11 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
         a = '('+','.join(l_)+')'
         return eval(f+a)
 
-    assert ch.count('⟨') == ch.count('⟩')==ch.count('$')+1==1 and ch[-1]=='⟩'
+    if not (ch.count('⟨') == ch.count('⟩')==ch.count('$')+1==1 and ch[-1]=='⟩'):
+        raise error.WrongSyntax()
     f,a = ch[:-1].split('⟨')
-    assert f in function and type(function[f])==Applications.Applications
+    if not(f in function and type(function[f])==Applications.Applications):
+        raise error.WrongSyntax()
     f="function['"+f+"']"
     l_args = []
     for elt in a.split(';'):

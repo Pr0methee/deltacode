@@ -51,15 +51,15 @@ class NameError(Exception):
         return "NameError : "
 
 class WrongSyntax(Exception):
-    def __init__(self) -> None:
-        super().__init__("This sentence is syntaxly incorrect.")
+    def __init__(self,*expr) -> None:
+        super().__init__("This sentence is syntaxly incorrect." if expr==() else f"The sentence '{''.join(expr)}' is syntaxly incorrect")
     
     def name(self):
         return "WrongSyntax : "
 
 class AlreadyExistsError(Exception):
     def __init__(self, name) -> None:
-        super().__init__(f"Variable {name} already exists, we can't create it again.")
+        super().__init__(f"Object {name} already exists, we can't create it again.")
     
     def name(self):
         return "AlreadyExistsError : "
