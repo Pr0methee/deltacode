@@ -13,8 +13,8 @@ class DividingByZero(Exception):
         return "DividingByZero : "
 
 class ConvertionError(Exception):
-    def __init__(self):
-        super().__init__(f"Incorrect convertion ")
+    def __init__(self,obj,t):
+        super().__init__(f"Incorrect convertion, {obj} can't be turn into a {t} object")
     
     def name(self):
         return "ConvertionError : "
@@ -27,8 +27,9 @@ class UnknownObject(Exception):
         return "UnknownObject : "
 
 class TypeError(Exception):
-    def __init__(self, obj) -> None:
-        super().__init__(f"{obj} can't be understood as a type.")
+    def __init__(self, obj,typ=1) -> None:
+        if typ == 1 :super().__init__(f"{obj} can't be understood as a type.")
+        elif typ == 2: super().__init__(f"{obj} can't be called, it is neither a function nor an application.")
     def name(self):
         return 'TypeError : '
 

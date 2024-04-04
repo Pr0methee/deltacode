@@ -32,7 +32,8 @@ def convert(obj,typ):
         return default_types.S(str(obj))
     
     if type(typ)==default_types.Parts:
-        assert type(obj)==default_types.SET or type(obj)==default_types.EmptySet
+        if not(type(obj)==default_types.SET or type(obj)==default_types.EmptySet):
+            raise error.ConvertionError(obj,default_types.stringify(typ))
         if type(obj) == default_types.EmptySet:
             return default_types.SET(typ.typ)
         r = default_types.SET(typ.typ)
@@ -45,8 +46,8 @@ def convert(obj,typ):
         if not typ in default_types.INCLUSIONS[type(obj)]:raise error.ConvertionError
         return typ(obj.value)
     
-    assert type(obj)==default_types.Tuple 
-    assert default_types.include(obj.type,typ)
+    if type(obj)!=default_types.Tuple  or not default_types.include(obj.type,typ):
+        raise error.ConvertionError(obj,default_types.stringify(typ))
     t=[]
     for i in range(len(typ.schema)):
         t.append(convert(obj[i],typ.schema[i]))

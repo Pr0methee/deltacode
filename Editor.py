@@ -1,7 +1,7 @@
 from tkinter import *
 import tkinter.scrolledtext as scrolledtext
 import tkinter.filedialog as filedialog
-import compilator,_parser_,Executor,os,cProfile
+import compilator,_parser_,Executor,os
 
 class App(Tk):
     def __init__(self):
@@ -132,15 +132,15 @@ class App(Tk):
     
     def saveas(self):
         self.compile()
-        f = filedialog.asksaveasfilename(defaultextension='.d',filetypes=[('Compiled delta files','.d'),('Uncompiled delta files','.du')])
+        f = filedialog.asksaveasfilename(defaultextension='.dc',filetypes=[('Compiled delta files','.dc'),('Uncompiled delta files','.du')])
         with open(f,'wb') as file:
-            if os.path.splitext(f)[1]=='.d':
+            if os.path.splitext(f)[1]=='.dc':
                 file.write(bytes(self.text.get(2.0,END),'utf-8'))
             else:
                 file.write(bytes(compilator.decompile(self.text.get(2.0,END)),'utf-8'))
 
     def open(self):
-        f = filedialog.askopenfilename(defaultextension='.d',filetypes=[('Compiled delta files','.d'),('Uncompiled delta files','.du')])
+        f = filedialog.askopenfilename(defaultextension='.dc',filetypes=[('Compiled delta files','.dc'),('Uncompiled delta files','.du')])
         with open(f,'rb') as file:
             r=file.read().decode('utf-8')
             self.text.insert(END,r)

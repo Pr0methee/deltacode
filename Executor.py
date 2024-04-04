@@ -94,12 +94,12 @@ class Executor:
         self.echo_affect(name,value)
         self.VARIABLES[name][1]=value
     
-    def suppr_var(self,var):
+    def suppr_var(self,var,flag=True):
         if var not in self.VARIABLES:
             raise error.UnknownObject(var)
         
         del self.VARIABLES[var]
-        self.echo_del(var)
+        if flag :self.echo_del(var)
 
     def create_alias(self,name,ref):
         if name in self.VARIABLES or name in self.ALIAS:
@@ -377,11 +377,13 @@ class Executor:
             except error.EOI:continue
             if res ==error.EOI:
                 continue
-            if res == None or not self.BOUCLE:return 
+            if res == None or not self.BOUCLE:
+                break
             if res :
                 self.STOP=True
                 self.BOUCLE=False
-                return
+                break
+        self.suppr_var(code[1],False)
             
     def if_ex(self,code):
         expr=[]
@@ -443,14 +445,16 @@ class Executor:
     def create_function(self,code):
         code=code[1:-1]
         code=_parser_.parse(code)
-        assert len(code)>2
-        assert len(code[0])==5
-        assert code[0][0] not in self.VARIABLES and code[0][0] not in self.FUNCTIONS and code[0][0] not in self.ALIAS and code[0][0] not in self.DICTIONARY
-        assert code[0][1]==':' and code[0][3]== '⟶'
-        assert default_types.recognize_type(code[0][2]) and default_types.recognize_type(code[0][4])
+        if  len(code)<=2:raise error.WrongSyntax()
+        if  len(code[0])!=5: raise error.WrongSyntax()
+        if code[0][0] in self.VARIABLES or code[0][0] in self.FUNCTIONS or code[0][0]  in self.ALIAS or code[0][0] in self.DICTIONARY: raise error.AlreadyExistsError(code[0][0])
+        if code[0][1]!=':' or code[0][3] != '⟶':raise error.WrongSyntax()
+        if not default_types.recognize_type(code[0][2]) : raise error.TypeError(code[0][2])
+        if not default_types.recognize_type(code[0][4]) : raise error.TypeError(code[0][4])
 
         self.FUNCTIONS[code[0][0]] = Functions.Function(code[0][0],code[0][2],code[0][4],self.echo)
-        assert len(code[1]) == 1 and code[1][0][0] == '⟨' and code[1][0][-1] == '⟩'
+        if not (len(code[1]) == 1 and code[1][0][0] == '⟨' and code[1][0][-1] == '⟩'):
+            raise error.WrongSyntax()
         args = code[1][0][1:-1].split(';')
         self.FUNCTIONS[code[0][0]].set_args_name(*args)
         i=2
@@ -460,12 +464,12 @@ class Executor:
         if code[i][0][0]==code[i][0][-1]=='"':
             self.FUNCTIONS[code[0][0]].set_doc(code[i][0][1:-1])
             i+=1
-        assert code[i:]!=[]
+        if code[i:]==[]: raise error.WrongSyntax()
         self.FUNCTIONS[code[0][0]].set_code(code[i:])
         self.FUNCTIONS[code[0][0]].set_global_obj(self.VARIABLES,self.FUNCTIONS,self.ALIAS,self.DICTIONARY)
 
     def func_call(self,f,*args):
-        assert f in self.FUNCTIONS
+        if f not in self.FUNCTIONS: raise error.TypeError(f,typ=2)##
         self.FUNCTIONS[f].set_global_obj(self.VARIABLES,self.FUNCTIONS,self.ALIAS,self.DICTIONARY)
         r=self.FUNCTIONS[f](*[self.VARIABLES[elt][1] for elt in args])
         if self.FUNCTIONS[f].gl_bal:
@@ -557,12 +561,12 @@ class FuncExecutor:
         self.echo_affect(name,value)
         self.VAR[name][1]=value
     
-    def suppr_var(self,var):
+    def suppr_var(self,var,flag = True):
         if var not in self.VAR:
             raise error.UnknownObject(var)
         
         del self.VAR[var]
-        self.echo_del(var)
+        if flag : self.echo_del(var)
 
     def create_alias(self,name,ref):
         if name in self.VAR or name in self.ALIAS:
@@ -670,7 +674,7 @@ class FuncExecutor:
                     self.return_obj=r
                     self.returned=True
             case _:
-                assert all([elt not in _parser_.kw for elt in ph])
+                if any([elt  in _parser_.kw for elt in ph]):raise error.WrongSyntax()
                 self.eval_expr(ph)
         
         
@@ -743,7 +747,7 @@ class FuncExecutor:
                 return '0err'
     
     def for_all_ex(self,code):
-        assert len(code)==6 and code[2]=='∊' and code[4]==':'
+        if not(len(code)==6 and code[2]=='∊' and code[4]==':'):raise error.WrongSyntax()
         if not default_types.ZIntervalle.recognize(code[3]) and code[3] != 'ℕ' and not (code[3] in self.VAR and (type(self.VAR[code[3]][0]) in (default_types.Parts,) or self.VAR[code[3]][0]==default_types.S)):raise
         
         if code[3] == 'ℕ':
@@ -768,12 +772,12 @@ class FuncExecutor:
             #Ens:SET
             self.VAR[code[1]] = [Ens.type,None]
         
-        assert len(code[5])>2 and code[5][0]=='\\' and code[5][-1]=='/'
+        if not(len(code[5])>2 and code[5][0]=='\\' and code[5][-1]=='/'):raise error.WrongSyntax()
         run_code= code[5][1:-1]
         #run_code = _parser_.parse(run_code)
         self.BOUCLE=True
         for i in Ens:
-            assert self.BOUCLE
+            assert (self.BOUCLE)
             self.VAR[code[1]][1]=i
 
             try:
@@ -783,15 +787,16 @@ class FuncExecutor:
             except error.EOI:continue
             if res ==error.EOI:
                 continue
-            if res == None or not self.BOUCLE:return 
+            if res == None or not self.BOUCLE:break 
             if res :
                 self.STOP=True
                 self.BOUCLE=False
-                return
+                break
+        self.suppr_var(code[1],False)
             
     def if_ex(self,code):
         expr=[]
-        assert code[0]=='➣'
+        if code[0]!='➣':raise error.WrongSyntax()
         i=1
         ex=False
         while i <len(code):
@@ -802,7 +807,7 @@ class FuncExecutor:
                 res =self.eval_expr(expr)
                 if type(res) != default_types.B:raise
                 if res.v :
-                    assert elt[0]=='\\' and elt[-1]=='/'
+                    if not(elt[0]=='\\' and elt[-1]=='/') : raise error.WrongSyntax()
                     run_code = _parser_.parse(elt[1:-1])
                     res = self.execute(run_code)
                     if res is error.Halt:
@@ -824,15 +829,19 @@ class FuncExecutor:
     def dict_ex(self,nom,t1,t2):
         """Créer un dictionaire"""
 
-        assert nom not in self.VAR and nom not in self.DICT and nom not in self.FUNC
-        assert default_types.recognize_type(t1)and default_types.recognize_type(t2)
+        if nom in self.VAR or nom in self.DICT or nom in self.FUNC or nom in self.ALIAS:
+            raise error.AlreadyExistsError(nom)
+        if not default_types.recognize_type(t1):
+            raise error.TypeError(t1)
+        if not default_types.recognize_type(t2):
+            raise error.TypeError(t2)
         t1,t2 = default_types.type_from_str(t1),default_types.type_from_str(t2)
         self.DICT[nom]=[(t1,t2),{}]
 
     def dict_affect(self,code):
-        assert code[1] == '≔'
+        if code[1] != '≔':raise error.WrongSyntax()
         obj = code[0]
-        assert obj.count('$')==1
+        if obj.count('$')!=1:raise error.WrongSyntax()
         obj = obj.split('$')
         if obj[0] not in self.DICT:
             raise error.NameError(obj[0])
@@ -845,7 +854,7 @@ class FuncExecutor:
         self.DICT[obj[0]][1][k]=v
 
     def func_call(self,f,*args):
-        assert f in self.FUNC
+        if f not in self.FUNC: raise error.TypeError(f,typ=2)##
         self.FUNC[f].set_global_obj(self.VAR,self.FUNC,self.ALIAS,self.DICT)
         r=self.FUNC[f](*[self.VAR[elt][1] for elt in args])
         if self.FUNC[f].gl_bal:
