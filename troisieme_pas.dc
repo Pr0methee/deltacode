@@ -1,0 +1,48 @@
+%On va maintenant faire des boucles...
+%Pour commencer en douceur,voici une boucle simple :
+∀ i ∊ ⟦0;10⟧ : \
+echo$i.
+/.
+
+%on itère ici sur un intervalle d'entier.
+%on peut également itérer sur une chaine de caractère :
+∃ ch ∊ ϩ.
+ch ≔ "Hello World !".
+∀ i ∊ ch : \
+echo$i.
+/.
+
+%Sur un ensemble :
+∃ S ∊ ℘(ℕ).
+S≔{1;2;3}.
+∀ i ∊ S : \
+echo$i.
+/.
+%Notez bien que l'ordre dans lequel on ajoute les éléments dans l'ensemble n'a aucune influence sur l'ordre de ses éléments.
+%On peut également itérer sur ℕ.
+%Ça permet de faire des boucles infinies !
+
+%Ou en les contrôlant mieux : des boucles conditionnelles
+%Par exemple pour afficher la suite de Syracuse de graine 15 :
+∃ u ∊ ℕ.
+u ≔ 15.
+∀ i ∊ ℕ : \
+echo$u.
+➣ u = 1 ⇝\
+@HALT.
+/.
+
+➣ 2 | u ⇝ \
+u ≔ u÷ 2.
+/
+➣ ⊤ ⇝ \
+u ≔ 3 × u + 1.
+/.
+/.
+
+%Examinons un peu plus l'intérieur de la boucle...
+% Ce qui permet réellement de faire une boucle conditionnelle, c'est le "➣ u = 1 ⇝ \@HALT./."
+%c'est ce qui gère le cas d'arrêt : si la condition est vraie : on fait @HALT, c'est à dire qu'on interompt brutalement la boucle pour revenir hors de la boucle.
+
+%Notez bien que contrairement à d'autre langage, les boucles conditionnelles en delta code sont des boucles jusqu'à plutôt que tant que.
+

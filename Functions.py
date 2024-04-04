@@ -1,4 +1,4 @@
-import default_functions,default_types, Executor
+import default_functions,default_types, Executor,error
 
 class Function:
     def __init__(self,name,t_in,t_out,echo):
@@ -15,10 +15,15 @@ class Function:
 
     def set_args_name(self,*noms:str):
         if self.types[0] == default_types.Parts(default_types.EmptySet):
-           assert noms==('∅',)
+           if noms!=('∅',):
+                raise error.UnexpectedArgument(given=len(noms),req=1,wanted='∅')
            self.arg_names=()
-        assert all(type(elt)==str for elt in noms)
-        assert (type(self.types[0])!=default_types.CrossSet and len(noms)==1) or (default_functions.dim(self.types[0]) == default_types.N(len(noms)))
+        for elt in noms:
+            if type(elt)!=str:raise error.InvalidName(elt)
+        if (type(self.types[0])!=default_types.CrossSet and len(noms)!=1):
+            raise error.UnexpectedArgument(given=len(noms),req=1)
+        elif type(self.types[0])==default_types.CrossSet and (default_functions.dim(self.types[0])!= default_types.N(len(noms))):
+            raise error.UnexpectedArgument(given=len(noms),req=default_functions.dim(self.types[0]).value)
         self.arg_names = noms
 
     def set_global(self):
@@ -51,14 +56,17 @@ class Function:
 
     def __call__(self,*vals):
         if self.types[0] == default_types.Parts(default_types.EmptySet):
-            assert vals==()
+            if vals!=():
+                raise error.UnexpectedArgument(given=len(vals),req=0)
         elif type(self.types[0])!=default_types.CrossSet:
-            assert default_types.include(type(vals[0]),self.types[0])
-            self.VAR[self.arg_names[0]]=[self.types[0],vals[0]]
+            if len(vals)!=1:
+                raise error.UnexpectedArgument(given=len(vals),req=1)
+            self.VAR[self.arg_names[0]]=[self.types[0],default_functions.convert(vals[0],self.types[0])]
         else:
+            if len(vals)!=default_functions.dim(self.types[0]):
+                raise error.UnexpectedArgument(given=len(vals),req=default_functions.dim(self.types[0]).value)
             for i in range(len(self.arg_names)):
-                assert default_types.include(type(vals[i]),self.types[0][i])
-                self.VAR[self.arg_names[i]]=[self.types[0][i],vals[i]]
+                self.VAR[self.arg_names[i]]=[self.types[0][i],default_functions.convert(vals[i],self.types[0][i])]
 
         ex = Executor.FuncExecutor(self.code,self.echo,self.VAR,self.FUNC,self.ALIAS,self.DICT)#il faut le coder !
         res=ex.execute()

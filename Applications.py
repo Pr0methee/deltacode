@@ -1,4 +1,4 @@
-import default_types,evaluations,_parser_,default_functions,error
+import default_types,evaluations,default_functions,error
 
 
 class Applications:
@@ -14,9 +14,10 @@ class Applications:
             self.arg_names=()
         for elt in noms:
             if type(elt)!=str:raise error.InvalidName(elt)
+        print("tests",self.types[0])
         if (type(self.types[0])!=default_types.CrossSet and len(noms)!=1):
             raise error.UnexpectedArgument(given=len(noms),req=1)
-        if (default_functions.dim(self.types[0])!= default_types.N(len(noms))):
+        elif type(self.types[0])==default_types.CrossSet and (default_functions.dim(self.types[0])!= default_types.N(len(noms))):
             raise error.UnexpectedArgument(given=len(noms),req=default_functions.dim(self.types[0]).value)
         self.arg_names = noms
     
@@ -39,7 +40,7 @@ class Applications:
         else:
             ARGS = {}
             if len(vals)!=default_functions.dim(self.types[0]):
-                raise error.UnexpectedArgument(given=len(noms),req=default_functions.dim(self.types[0]).value) 
+                raise error.UnexpectedArgument(given=len(vals),req=default_functions.dim(self.types[0]).value) 
             for i in range(len(self.arg_names)):
                 ARGS[self.arg_names[i]]=[self.types[0][i],default_functions.convert(self.types[0][i],vals[i])]
         FUNC = {self.name:self}
