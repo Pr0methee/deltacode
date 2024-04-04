@@ -54,13 +54,15 @@ def convert(obj,typ):
     return default_types.Tuple(tuple(t),typ)
 
 def dim(elt):
-    assert type(elt)==default_types.CrossSet or type(elt)==default_types.Tuple
+    if not(type(elt)==default_types.CrossSet or type(elt)==default_types.Tuple):
+        raise error.UnsupportedOperation('dim',default_types.stringify(type(elt)))
     if type(elt)==default_types.Tuple:
         return dim(elt.type)
     return default_types.N(len(elt.schema))
 
 def card(elt):
-    assert type(elt)==default_types.SET
+    if type(elt)!=default_types.SET:
+        raise error.UnsupportedOperation('card',default_types.stringify(type(elt)))
     return default_types.N(len(elt.deep_get()))
 
 def IN(v,t):

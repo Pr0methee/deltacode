@@ -251,8 +251,10 @@ class Executor:
                 r=self.if_ex(ph)
                 if r == error.EOI:return r
             case [nom,':',t1,'⟶',t2]:
-                if not default_types.recognize_type(t1) or not default_types.recognize_type(t2):
-                    raise error.WrongSyntax()
+                if not default_types.recognize_type(t1):
+                    raise error.TypeError(t1)
+                if not default_types.recognize_type(t2):
+                    raise error.TypeError(t2)
                 if nom in self.VARIABLES or nom in self.DICTIONARY or nom in self.ALIAS or nom in self.FUNCTIONS:
                     raise error.AlreadyExistsError(name)
                 self.FUNCTIONS[nom]=Applications.Applications(nom,t1,t2)

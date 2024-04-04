@@ -89,3 +89,19 @@ class EvaluationError(Exception):
     
     def name(self):
         return "EvaluationError : "
+
+class UnsupportedOperation(Exception):
+    def __init__(self, op,t) -> None:
+        super().__init__(f"Unsupported opération {op} on {t} objects")
+    
+    def name(self):
+        return "UnsupportedOperation : "
+
+class UnexpectedArgument(Exception):
+    def __init__(self,given,req,wanted=''):
+        if wanted =='':
+            super().__init__(f"You named {given} arguments while {req} are expected")
+        else:
+            super().__init__(f"You named {given} arguments while {req} are expected and should be : {wanted}")
+    def name(self):
+        return "UnexpectedArgument : "  
