@@ -69,7 +69,7 @@ class Applications:
     def __str__(self) -> str:
         r= self.name+' : '+default_types.stringify(self.types[0])+' ⟶  '+default_types.stringify(self.types[1])
         try:
-            r+='\n'+';'.join(self.arg_names) + ' ⟼  '+''.join(self.expr)
+            r+='\n'+';'.join(self.arg_names) + ' ⟼  '+' '.join(self.expr)
         except:pass
         return r
     def __repr__(self) -> str:
