@@ -44,6 +44,8 @@ def parse_in_sentences(ch:str):
             assert mot.replace(' ','') ==''
             a=True
             mot='@'
+        elif car ==' ' and not s and sc==0 and not d:
+            continue
         else:
             if car =='#' and not d:continue
             mot+=car
