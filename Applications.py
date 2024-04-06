@@ -14,7 +14,7 @@ class Applications:
             self.arg_names=()
         for elt in noms:
             if type(elt)!=str:raise error.InvalidName(elt)
-        print("tests",self.types[0])
+
         if (type(self.types[0])!=default_types.CrossSet and len(noms)!=1):
             raise error.UnexpectedArgument(given=len(noms),req=1)
         elif type(self.types[0])==default_types.CrossSet and (default_functions.dim(self.types[0])!= default_types.N(len(noms))):
@@ -26,7 +26,6 @@ class Applications:
         self.expr =expr
     
     def __call__(self,*vals):
-        print(len(vals))
         if self.types[0] == default_types.Parts(default_types.EmptySet):
             if vals!=():
                 raise error.UnexpectedArgument(given=len(vals),req=0)
@@ -35,14 +34,14 @@ class Applications:
             if len(vals)!=1:
                 raise error.UnexpectedArgument(given=len(vals),req=1)
             ARGS = {
-                self.arg_names[0]:[self.types[0],default_functions.convert(self.types[0],vals[0])]
+                self.arg_names[0]:[self.types[0],default_functions.convert(vals[0],self.types[0])]
             }
         else:
             ARGS = {}
             if len(vals)!=default_functions.dim(self.types[0]):
                 raise error.UnexpectedArgument(given=len(vals),req=default_functions.dim(self.types[0]).value) 
             for i in range(len(self.arg_names)):
-                ARGS[self.arg_names[i]]=[self.types[0][i],default_functions.convert(self.types[0][i],vals[i])]
+                ARGS[self.arg_names[i]]=[self.types[0][i],default_functions.convert(vals[i],self.types[0][i])]
         FUNC = {self.name:self}
         if self.expr[0] == "➣":
             l = split(self.expr)

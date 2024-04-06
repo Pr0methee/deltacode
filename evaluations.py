@@ -27,6 +27,7 @@ def create_evaluating_list(expr:list):
     return l_
 
 def evaluate(l:list,variables,dictionary,function,alias,ex,k=0):#,stdout=sys.__stdout__):
+    
     simpl(l)
     assert type(k)==int
     for i,elt in enumerate(l):

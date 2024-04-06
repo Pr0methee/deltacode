@@ -136,6 +136,7 @@ class Executor:
                 #raise err
                 self.STOP=True
                 if 'name' in dir(err):
+                    print(err)
                     if err==error.Halt and self.BOUCLE:
                         self.BOUCLE=False
                         return
@@ -460,8 +461,11 @@ class Executor:
         args = code[1][0][1:-1].split(';')
         self.FUNCTIONS[code[0][0]].set_args_name(*args)
         i=2
-        if code[2] == ['@GLOBAL']:
+        if code[i] == ['@GLOBAL']:
             self.FUNCTIONS[code[0][0]].set_global()
+            i+=1
+        if code[i] == ['@RESTRICT'] :
+            self.FUNCTIONS[code[0][0]].set_restricted()
             i+=1
         if code[i][0][0]==code[i][0][-1]=='"':
             self.FUNCTIONS[code[0][0]].set_doc(code[i][0][1:-1])
@@ -607,6 +611,7 @@ class FuncExecutor:
         t=time.time()
         self.echo.bind_all('<Control-c>',self.raise_end)
         for i,ph in enumerate(code):
+            self.l=i
             try:
                 h =self.exec(ph)
             except Exception as err:
@@ -870,16 +875,16 @@ class FuncExecutor:
         if f not in self.FUNC: raise error.TypeError(f,typ=2)##
         #faire des copies
         cvar,cfct,calias,cdict = {},{},{},{}
-        for k,v in self.VARIABLES.items():
+        for k,v in self.VAR.items():
             cvar[copy.copy(k)]=copy.copy(v)
-        for k,v in self.FUNCTIONS.items():
+        for k,v in self.FUNC.items():
             cfct[copy.copy(k)]=copy.copy(v)
         for k,v in self.ALIAS.items():
             calias[copy.copy(k)]=copy.copy(v)
-        for k,v in self.DICTIONARY.items():
+        for k,v in self.DICT.items():
             cdict[copy.copy(k)]=copy.copy(v) 
 
-        self.FUNCTIONS[f].set_global_obj(cvar,cfct,calias,cdict)
+        self.FUNC[f].set_global_obj(cvar,cfct,calias,cdict)
         r=self.FUNC[f](*[self.VAR[elt][1] for elt in args])
         if self.FUNC[f].gl_bal:
             for k,v in self.FUNC[f].VAR.items():

@@ -85,7 +85,43 @@ fct : ℘(∅) ⟶ ℘(∅).
 k ≔ 5.
 #
 
-fct$.
 
+fct$.
 echo$k.
+%On remarque que k n'a pas changé de valeur de manière globale. 
+%Si on veut que k change de valeur de manière globale, il faut rajouter @GLOBAL dans la signature de la fonction :
+
+#
+fct₂ : ℘(∅) ⟶ ℘(∅).
+⟨⟩.
+@GLOBAL.
+k ≔ 5.
+#
+
+fct₂$.
+echo$k.
+%La valeur de k a bien été modifiée.
+
+%Il est possible de créer des fonctions "restreintes". C'est à dire qu'elles ne peuvent pas être appelées directement par l'utilisateur. Elles peuvent cependant être appelées par une autre fonction.
+#
+fonction₁ : ℘(∅) ⟶ ℘(∅).
+⟨⟩.
+@RESTRICT.
+∃ j ∊ ℝ.
+j ≔ 5.
+echo$j.
+#
+
+%fonction₁$.%essayez pour voir...
+
+#
+fonction₂ : ℘(∅) ⟶ ℘(∅).
+⟨⟩.
+fonction₁$.
+#
+
+fonction₂$.
+
+%lorsqu'on crée une fonction on peut évidemment les déclarer comme ayant des effets globaux, étant restreintes et ayant une doc-string.
+%cependant il faut respecter cet ordre dans la signature de la fonction.
 

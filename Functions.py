@@ -29,6 +29,9 @@ class Function:
 
     def set_global(self):
         self.gl_bal=True
+    
+    def set_restricted(self):
+        self.restricted=True
 
     def right_access(self,ex):
         if type(ex) == Executor.Executor and self.restricted:

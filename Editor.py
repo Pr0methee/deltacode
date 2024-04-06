@@ -141,6 +141,7 @@ class App(Tk):
 
     def open(self):
         f = filedialog.askopenfilename(defaultextension='.dc',filetypes=[('Compiled delta files','.dc'),('Uncompiled delta files','.du')])
+        if f=='':return
         with open(f,'rb') as file:
             r=file.read().decode('utf-8')
             self.text.insert(END,r)

@@ -92,13 +92,13 @@ def colorise(text:str):
     mot=''
     for j in range(len(text)) :
         car= text[j]
-        if car =='%' and not s :
+        if car =='%' and not s and not h:
             com=True
-        if car =='⟦' and not s:
+        if car =='⟦' and not s and not h:
             iz=True
         #if car  == '[' and not s:
         #    ir=True
-        if car == '@' and not s:
+        if car == '@' and not s and not h:
             hide=True
 
         
@@ -157,7 +157,7 @@ def colorise(text:str):
         if car == '#'  and not com and not s:
             h=not h
             d['h'].append((l,c))
-        elif car =='"':
+        elif car =='"' and not com and not h:
             s=not s
             d['str'].append((l,c))
         elif car == 'ι':
