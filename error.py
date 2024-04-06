@@ -105,3 +105,10 @@ class UnexpectedArgument(Exception):
             super().__init__(f"You named {given} arguments while {req} are expected and should be : {wanted}")
     def name(self):
         return "UnexpectedArgument : "  
+
+class DeniedAccessError(Exception):
+    def __init__(self, f) -> None:
+        super().__init__(f"You tried to access the function : {f} from global code, but it's in restricted mode.")
+    
+    def name(self):
+        return "DeniedAccessError : "
