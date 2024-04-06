@@ -309,6 +309,7 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
         l_=[]
 
         if f in function:
+            function[f].right_access(ex)
             for elt in a[1:-1].split(','):
                 if elt in variables:
                     l_.append(elt) 
