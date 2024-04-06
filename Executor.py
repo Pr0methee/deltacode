@@ -1,7 +1,7 @@
 from tkinter.scrolledtext import ScrolledText #as scrolledtext.Scrolledtext
 import _parser_, default_types, evaluations,Applications,error,time,Functions
 from default_functions import convert
-import sys
+import sys,copy
 from tkinter import END
 
 class StdRedirector:
@@ -437,7 +437,7 @@ class Executor:
         if obj[0] not in self.DICTIONARY:
             raise error.NameError(obj[0])
         
-        k = default_types.attribute_type(obj[1])
+        k = self.eval_expr([obj[1]])
         k =convert(k,self.DICTIONARY[obj[0]][0][0])
         v = self.eval_expr(code[2:])
         v = convert(v,self.DICTIONARY[obj[0]][0][1])
@@ -472,7 +472,18 @@ class Executor:
 
     def func_call(self,f,*args):
         if f not in self.FUNCTIONS: raise error.TypeError(f,typ=2)##
-        self.FUNCTIONS[f].set_global_obj(self.VARIABLES,self.FUNCTIONS,self.ALIAS,self.DICTIONARY)
+        #faire des copies
+        cvar,cfct,calias,cdict = {},{},{},{}
+        for k,v in self.VARIABLES.items():
+            cvar[copy.copy(k)]=copy.copy(v)
+        for k,v in self.FUNCTIONS.items():
+            cfct[copy.copy(k)]=copy.copy(v)
+        for k,v in self.ALIAS.items():
+            calias[copy.copy(k)]=copy.copy(v)
+        for k,v in self.DICTIONARY.items():
+            cdict[copy.copy(k)]=copy.copy(v) 
+
+        self.FUNCTIONS[f].set_global_obj(cvar,cfct,calias,cdict)
         r=self.FUNCTIONS[f](*[self.VARIABLES[elt][1] for elt in args])
         if self.FUNCTIONS[f].gl_bal:
             for k,v in self.FUNCTIONS[f].VAR.items():
@@ -848,7 +859,7 @@ class FuncExecutor:
         if obj[0] not in self.DICT:
             raise error.NameError(obj[0])
         
-        k = default_types.attribute_type(obj[1])
+        k = self.eval_expr([obj[1]])
         k =convert(k,self.DICT[obj[0]][0][0])
         v = self.eval_expr(code[2:])
         v = convert(v,self.DICT[obj[0]][0][1])
@@ -857,7 +868,18 @@ class FuncExecutor:
 
     def func_call(self,f,*args):
         if f not in self.FUNC: raise error.TypeError(f,typ=2)##
-        self.FUNC[f].set_global_obj(self.VAR,self.FUNC,self.ALIAS,self.DICT)
+        #faire des copies
+        cvar,cfct,calias,cdict = {},{},{},{}
+        for k,v in self.VARIABLES.items():
+            cvar[copy.copy(k)]=copy.copy(v)
+        for k,v in self.FUNCTIONS.items():
+            cfct[copy.copy(k)]=copy.copy(v)
+        for k,v in self.ALIAS.items():
+            calias[copy.copy(k)]=copy.copy(v)
+        for k,v in self.DICTIONARY.items():
+            cdict[copy.copy(k)]=copy.copy(v) 
+
+        self.FUNCTIONS[f].set_global_obj(cvar,cfct,calias,cdict)
         r=self.FUNC[f](*[self.VAR[elt][1] for elt in args])
         if self.FUNC[f].gl_bal:
             for k,v in self.FUNC[f].VAR.items():
