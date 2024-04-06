@@ -154,7 +154,7 @@ def colorise(text:str):
             d['v'].append((l,c))
             mot=''
         
-        if car == '#':
+        if car == '#'  and not com and not s:
             h=not h
             d['h'].append((l,c))
         elif car =='"':
