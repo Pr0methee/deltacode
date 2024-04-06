@@ -6,6 +6,7 @@ class Function:
         assert default_types.recognize_type(t_in) and default_types.recognize_type(t_out)
         self.types = (default_types.type_from_str(t_in),default_types.type_from_str(t_out))
         self.gl_bal=False
+        self.restricted = False
         self.arg_names=()
         self.echo=echo
         self.__doc__=''
@@ -15,7 +16,7 @@ class Function:
 
     def set_args_name(self,*noms:str):
         if self.types[0] == default_types.Parts(default_types.EmptySet):
-           if noms!=('∅',):
+           if noms!=('∅',) and noms != ('',):
                 raise error.UnexpectedArgument(given=len(noms),req=1,wanted='∅')
            self.arg_names=()
         for elt in noms:
@@ -28,6 +29,10 @@ class Function:
 
     def set_global(self):
         self.gl_bal=True
+
+    def right_access(self,ex):
+        if type(ex) == Executor.Executor and self.restricted:
+            raise error.DeniedAccessError(self.name)
 
     def set_code(self,code):
         self.code=code #liste deja parsee
