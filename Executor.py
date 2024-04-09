@@ -1,7 +1,7 @@
 from tkinter.scrolledtext import ScrolledText #as scrolledtext.Scrolledtext
 import _parser_, default_types, evaluations,Applications,error,time,Functions
 from default_functions import convert
-import sys,copy
+import sys,copy,json,os
 from tkinter import END
 
 class StdRedirector:
@@ -37,6 +37,8 @@ class StdRedirector:
 
 class Executor:
     def __init__(self,echo:ScrolledText):
+        if not os.path.exists("dcache"):
+            os.mkdir("dcache")
         self.VARIABLES = {}
         self.ALIAS = {}
         self.FUNCTIONS = {}
@@ -112,7 +114,7 @@ class Executor:
         else:
             self.ALIAS[name]=ref
 
-    def execute(self,txt:str,flag=True):#,echoflag=True):
+    def execute(self,txt:str,flag=True,name=''):#,echoflag=True):
         self.text=txt
         self.parsed = _parser_.parse(txt)
 
