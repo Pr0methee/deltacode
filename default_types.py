@@ -1,8 +1,20 @@
+from __future__ import annotations
 import math,copy
-import default_functions
+import default_functions,error
 
-class N:
+class Types:
+    def __init__(self):pass
+    def call(self,f,*args):
+        if f not in dir(self):
+            raise error.AttributeError(f,stringify(type(self)))
+        r = 'self.'+f
+        r=eval(r)
+        return r(*args)
+
+
+class N(Types):
     def __init__(self,v):
+        super().__init__()
         assert type(v)==int and v>=0
         self.value=v
 
@@ -21,14 +33,16 @@ class N:
         return str(self.value)
 
     def __add__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("+",stringify(N),stringify(type(obj)))
         if type(obj) == N:
             return N(self.value+obj.value)
         else:
             return type(obj)(self.value)+obj
     
     def __mul__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("×",stringify(N),stringify(type(obj)))
         if type(obj) == N:
             return N(self.value*obj.value)
         else:
@@ -38,7 +52,8 @@ class N:
         return Z(-self.value)
     
     def __sub__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("-",stringify(N),stringify(type(obj)))
         if type(obj) == N and obj.value<= self.value:
             return N(self.value-obj.value)
         elif type(obj) == N:
@@ -47,7 +62,8 @@ class N:
             return type(obj)(self.value)-obj
 
     def __truediv__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("÷",stringify(N),stringify(type(obj)))
         if type(obj) in (N,Z) and self.value%obj.value==0:
             return type(obj)(int(self.value/obj.value))
         elif type(obj) in (N,Z):
@@ -64,26 +80,26 @@ class N:
             return B(self.value==__value.value)
     
     def __ne__(self, __value: object) -> bool:
-        return B(not (self==__value).v)
+        return B(not (self==__value))
     
     def __gt__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation(">",stringify(N),stringify(type(obj)))
         return B(self.value > obj.value)
     
     def __ge__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation("⩾",stringify(N),stringify(type(obj)))
         return B(self.value >= obj.value)
     
     def __lt__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation("<",stringify(N),stringify(type(obj)))
         return B(self.value < obj.value)
     
     def __le__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation("⩽",stringify(N),stringify(type(obj)))
         return B(self.value <= obj.value)
     
     def __hash__(self) -> int:
@@ -93,11 +109,13 @@ class N:
         return self.__str__()
     
     def div(self,obj):
-        assert type(obj) in (N,Z)
+        if type(obj) not in (N,Z):
+            raise error.UnsupportedOperation('|',stringify(N),stringify(type(obj)))
         return B(obj.value % self.value == 0)
 
     def __pow__(self,obj):
-        assert type(obj) in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation('^',stringify(N),stringify(type(obj)))
         if type(obj) == N : 
             return N(self.value ** obj.value)
         elif type(obj)!=C:
@@ -105,13 +123,20 @@ class N:
         elif type(obj)==C:
             return self**obj.re * C((self.value ** (obj.im*1j)).real,(self.value ** (obj.im*1j)).imag)
 
-class Z:
+class Z(Types):
     def __init__(self,v):
+        super().__init__()
         assert type(v)==int 
         self.value=v
 
     def __int__(self):
         return self.value
+    
+    def TurnIntoN(self):
+        if self.value >=0:
+            return N(self.value)
+        else:
+            return N(-self.value)
     
     def recognize(ch):
         return all([car in '-0123456789' for car in ch]) and ch.replace('-','')!=''
@@ -125,14 +150,16 @@ class Z:
         return str(self.value)
 
     def __add__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("+",stringify(Z),stringify(type(obj)))
         if type(obj) in (N,Z):
             return Z(self.value+obj.value)
         else:
             return type(obj)(self.value)+obj
     
     def __mul__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("×",stringify(Z),stringify(type(obj)))
         if type(obj) in (N,Z):
             return Z(self.value*obj.value)
         else:
@@ -142,14 +169,16 @@ class Z:
         return Z(-self.value)
     
     def __sub__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("-",stringify(Z),stringify(type(obj)))
         if type(obj) in (N,Z):
             return Z(self.value-obj.value)
         else:
             return type(obj)(self.value)-obj
 
     def __truediv__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("÷",stringify(Z),stringify(type(obj)))
         if type(obj) in (N,Z) and self.value%obj.value==0:
             return Z(int(self.value/obj.value))
         elif type(obj) in (N,Z):
@@ -170,22 +199,22 @@ class Z:
     
     def __gt__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation(">",stringify(Z),stringify(type(obj)))
         return B(self.value > obj.value)
     
     def __ge__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation("⩾",stringify(Z),stringify(type(obj)))
         return B(self.value >= obj.value)
     
     def __lt__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation("<",stringify(Z),stringify(type(obj)))
         return B(self.value < obj.value)
     
     def __le__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation("⩽",stringify(Z),stringify(type(obj)))
         return B(self.value <= obj.value)
     
     def __hash__(self) -> int:
@@ -195,11 +224,13 @@ class Z:
         return self.__str__()
     
     def div(self,obj):
-        assert type(obj) in (N,Z)
+        if type(obj) not in (N,Z):
+            raise error.UnsupportedOperation('|',stringify(Z),stringify(type(obj)))
         return B(obj.value % self.value == 0)
     
     def __pow__(self,obj):
-        assert type(obj) in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation('^',stringify(N),stringify(type(obj)))
         if type(obj) == N : 
             return N(self.value ** obj.value)
         elif type(obj)!=C:
@@ -207,10 +238,21 @@ class Z:
         elif type(obj)==C:
             return self**obj.re * C((self.value ** (obj.im*1j)).real,(self.value ** (obj.im*1j)).imag)
 
-class R:
+class R(Types):
     def __init__(self,v):
+        super().__init__()
         assert type(v)==float  or type(v)==int
         self.value=v
+
+    def TurnIntoZ(self):
+        if self.value >=0:
+            return Z(int(self.value))
+        else:
+            return Z(int(self.value)) - Z(1)
+
+    def TurnIntoN(self):
+        return self.TurnIntoZ().TurnIntoN()
+
 
     def __float__(self):
         return self.value
@@ -227,14 +269,16 @@ class R:
         return str(self.value).replace('.',',')
 
     def __add__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("+",stringify(R),stringify(type(obj)))
         if type(obj) in (N,Z,R):
             return R(self.value+obj.value)
         else:
             return type(obj)(self.value)+obj
     
     def __mul__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("×",stringify(R),stringify(type(obj)))
         if type(obj) in (N,Z,R):
             return R(self.value*obj.value)
         else:
@@ -243,23 +287,25 @@ class R:
     def __neg__(self):
         return R(-self.value)
     
-    def __pow__(self,n):
-        assert type(n) in NUMERAL
-        if type(n) != C:
-            return R(self.value**n.value) 
-        elif type(n)==C:
-            return self**n.re * C((self.value ** (n.im*1j)).real,(self.value ** (n.im*1j)).imag)
+    def __pow__(self,obj):
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("^",stringify(R),stringify(type(obj)))
+        if type(obj) != C:
+            return R(self.value**obj.value) 
+        elif type(obj)==C:
+            return self**obj.re * C((self.value ** (obj.im*1j)).real,(self.value ** (obj.im*1j)).imag)
 
-    
     def __sub__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("-",stringify(R),stringify(type(obj)))
         if type(obj) in (N,Z,R):
             return R(self.value-obj.value)
         else:
             return type(obj)(self.value)-obj
 
     def __truediv__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("÷",stringify(R),stringify(type(obj)))
         if type(obj) in (N,Z,R):
             return R(self.value/obj.value)
         else:
@@ -269,7 +315,7 @@ class R:
         if type(__value)not in NUMERAL:
             return B(False)
         if type(__value)==C:
-            return B(self.value==__value.re and __value.im==0)
+            return B(bool(self.value==__value.re and __value.im==0))
         else:
             return B(self.value==__value.value)
     
@@ -278,22 +324,22 @@ class R:
     
     def __gt__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation(">",stringify(R),stringify(type(obj)))
         return B(self.value > obj.value)
     
     def __ge__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation("⩾",stringify(R),stringify(type(obj)))
         return B(self.value >= obj.value)
     
     def __lt__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation("<",stringify(R),stringify(type(obj)))
         return B(self.value < obj.value)
     
     def __le__(self,obj):
         if type(obj)==C or type(obj) not in NUMERAL:
-            raise
+            raise error.UnsupportedOperation("⩽",stringify(N),stringify(type(obj)))
         return B(self.value <= obj.value)
     
     def __hash__(self) -> int:
@@ -301,14 +347,10 @@ class R:
     
     def __repr__(self) -> str:
         return self.__str__()
-    
-    def __pow__(self,obj):
-        assert type(obj) in NUMERAL
-        if type(obj)!=C:
-            return R(self.value ** obj.value)
 
-class C:
+class C(Types):#verifier si from_str(str) -> x
     def __init__(self,a,b=0):
+        super().__init__()
         assert (type(a) in (float,int) and type(b) in (float,int) )or (type(a)in NUMERAL and type(b) in NUMERAL and C not in (type(a),type(b)))
         if type(a) in NUMERAL:
             self.re=a
@@ -318,6 +360,25 @@ class C:
             self.im=b
         else:
             self.im=R(b)
+    
+    def call(self,f,*args):
+        if f=='R' or f == 'C':raise error.AttributeError(f,stringify(C))
+        return super().call(f,*args)
+    
+    def TurnIntoR(self):
+        return self.re
+
+    def TurnIntoZ(self):
+        return self.TurnIntoR().TurnIntoZ()
+
+    def TurnIntoN(self):
+        return self.TurnIntoZ().TurnIntoN()
+
+    def ℜ(self):
+        return self.re
+    
+    def ℑ(self):
+        return self.im
 
     def __complex__(self):
         return self.re+1j*self.im
@@ -335,28 +396,42 @@ class C:
                 l.append('')
             else:
                 l[-1]+=car
-        if len(l)==1:
+        if l[0] in ('-','+'):
+            s=l[0]
+            del l[0]
+            if s =='-':
+                l[0] = s +l[0]
+        
+        if len(l) == 1:
             if 'ι' in l[0]:
-                l= ['0']+[l[0][:-1]]
-                if l[1]=='':l[1]='1'
+                l = ['0','+']+l
             else:
-                l+=['0']
+                l = l + ['+','0ι']
+
+        s=l[1]
+        del l[1]
+        if s == '-':
+            l[1]=s + l[1]
+        
+        l[1] = l[1][:-1]
+        if l[1]=='':
+            l[1]='1'
+        
         return cls(float(l[0]),float(l[1]))
-    
-    def __complex__(self):
-        return self.re + self.im *1j
-    
+        
     def __str__(self) -> str:
-        return str(self.re.value)+'+'+str(self.im.value)+'ι' if self.im>=R(0) else 'C'+str(self.re.value)+str(self.im.value)+'ι' 
+        return str(self.re.value)+'+'+str(self.im.value)+'ι' if self.im>=R(0) else str(self.re.value)+str(self.im.value)+'ι' 
 
     def __add__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("+",stringify(C),stringify(type(obj)))
         if type(obj) == C:
             return C(self.re+obj.re,self.im+obj.im)
         return C(self.re+obj.value,self.im)
     
     def __mul__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("×",stringify(C),stringify(type(obj)))
         if type(obj) in (N,Z,R):
             return C(obj.value*self.re,obj.value*self.im)
         else:
@@ -366,14 +441,16 @@ class C:
         return C(-self.re,-self.im)
     
     def __sub__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("-",stringify(C),stringify(type(obj)))
         if type(obj) in (N,Z,R):
             return C(self.re-obj.value)
         else:
             return C(self.re-obj.re,self.im-obj.im)
 
     def __truediv__(self,obj):
-        assert type(obj)in NUMERAL
+        if type(obj) not in NUMERAL:
+            raise error.UnsupportedOperation("÷",stringify(C),stringify(type(obj)))
         if type(obj) in (N,Z,R):
             return C(self.re/obj.value,self.im/obj.value)
         else:
@@ -403,7 +480,8 @@ class C:
         return self.__str__()
     
     def __pow__(self,n):
-        assert type(n) in NUMERAL
+        if type(n) not in NUMERAL:
+            raise error.UnsupportedOperation('^',stringify(C),stringify(type(n)))
         if type(n) == C:
             r = complex(self) ** complex(n)
             return C(r.real,r.imag)
@@ -411,14 +489,30 @@ class C:
             r = complex(self) ** n.value
             return C(r.real,r.imag)
 
+    def __gt__(self,obj):
+        raise error.UnsupportedOperation(">",stringify(C))
+    
+    def __ge__(self,obj):
+        raise error.UnsupportedOperation("⩾",stringify(C))
+    
+    def __lt__(self,obj):
+        raise error.UnsupportedOperation("<",stringify(C))
+    
+    def __le__(self,obj):
+        raise error.UnsupportedOperation("⩽",stringify(C))
+
 NUMERAL = (N,Z,R,C)
 
-class S:
-    def __init__(self,v):
+class S(Types):
+    def __init__(self,v:str):
+        super().__init__()
         self.value = v
     
     def __str__(self) -> str:
         return self.value
+
+    def Length(self):
+        return N(len(self.value))
     
     def recognize(ch):
         if len(ch)<2:
@@ -436,18 +530,21 @@ class S:
     
     def __len__(self):
         return len(self.value)
+    
     def __hash__(self) -> int:
         return hash(self.__str__())
     
     def __repr__(self) -> str:
-        return self.__str__()
+        return '"'+self.__str__()+'"'
 
     def __add__(self,obj):
-        assert type(obj)==S
+        if type(obj)!=S:
+            raise error.UnsupportedOperation('+',stringify(S),stringify(type(obj)))
         return S(self.value+obj.value)
     
     def __mul__(self,obj):
-        assert type(obj)==N
+        if type(obj)!=N:
+            raise error.UnsupportedOperation('×',stringify(S),stringify(type(obj)))
         return S(self.value*obj.value)
     
     def __eq__(self, __value: object) -> bool:
@@ -455,7 +552,7 @@ class S:
         return B(self.value == __value.value)
     
     def __ne__(self, __value: object) -> bool:
-        return B( not (self==__value).v)
+        return B( not (self==__value))
     
     def __iter__(self):
         self.i=0
@@ -466,14 +563,59 @@ class S:
         if self.i <= len(self.value):
             return S(self.value[self.i-1])
         raise StopIteration
+    
+    def get(self,v):
+        if type(v)!=ZIntervalle:
+            v = default_functions.convert(v,Z)
+            if v < Z(0):
+                return self.Reverse().get(-v)
+            if v == Z(0) or v > self.Length():
+                raise error.IndexError(v)
+            return S(self.value[v.value-1])
+        else:
+            r=S("")
+            for i in v:
+                r += self.get(i)
+            return r 
+    
+    def Reverse(self):
+        v = ""
+        for i in range(len(self.value)-1,-1,-1):
+            v += self.value[i]
+        return S(v)
+    
+    def Capitalize(self):
+        return S(self.value.capitalize())
+    
+    def UpperCase(self):
+        return S(self.value.upper())
+    
+    def LowerCase(self):
+        return S(self.value.lower())
+    
+    def Split(self,car:S):
+        lch = self.value.split(car.value)
+        t = CrossSet(*[S for _ in range(len(lch))])
+        r = Tuple([S(elt) for elt in lch],t)
+        return r
 
-class B:
+    def Count(self,car:S):
+        return N(self.value.count(car.value))
+
+class B(Types):
     def __init__(self,v):
+        super().__init__()
         assert v in (True,False)
         self.v=v
     
     def __str__(self) -> str:
         return {True:'⊤',False:'⊥'}[self.v]
+    
+    def __bool__(self):
+        return self.v
+
+    def TurnIntoN(self):
+        return {True:N(1),False:N(0)}[self.v]
     
     @classmethod
     def from_str(cls,ch):
@@ -483,16 +625,6 @@ class B:
 
     def recognize(ch):
         return ch in ('⊤','⊥')
-
-    def __eq__(self,obj):raise
-
-    #def __and__(self,obj):
-    #    assert type(obj)==B
-    #    return B(self.v and obj.v)
-
-    #def __or__(self,obj):
-    #    assert type(obj)==B
-    #    return B(self.v or obj.v)
     
     def __not__(self):
         return not self.v
@@ -512,16 +644,21 @@ class B:
     def __repr__(self) -> str:
         return self.__str__()
     
-class SET:
+class SET(Types):
     def __init__(self,t):
-        assert t in (N,Z,R,C,S,B) or type(t)==CrossSet
+        super().__init__()
+        assert t in (N,Z,R,C,S,B) or type(t)==CrossSet or type(t) == Parts
         self.__l=set()
         self.type=t
     
     def add(self,v):
         if type(self.type) ==CrossSet:
             assert type(v)==Tuple and v.type==self.type
-        elif type(v) != self.type and (not include(type(v),self.type)):
+        elif (type(v) != SET and type(v) != self.type and (not include(type(v),self.type))):
+            raise
+        elif type(v)==SET and type(self.type) !=Parts:
+            raise
+        elif type(v)==SET and (not include(Parts(v.type),self.type)):
             raise
         if type(v)==str:
             self.__l.add(self.type.from_str(v))
@@ -555,7 +692,7 @@ class SET:
 
         l = SET.listify(ch)
         for elt in l:
-            if (type(typ)==CrossSet and not Tuple.recognize(elt,typ)) or (type(typ)!=CrossSet and not typ.recognize(elt)):return False
+            if (type(typ)==Parts and not SET.recognize(elt,typ.typ))or(type(typ)==CrossSet and not Tuple.recognize(elt,typ)) or (type(typ)!=CrossSet and not typ.recognize(elt)):return False
         
         return True
 
@@ -586,14 +723,14 @@ class SET:
             s=SET(self.type)
             for elt in self:
                 for thing in __o:
-                    if (thing == elt).v:
+                    if (thing == elt):
                         s.add(elt)
                         break
         elif include(self.type,__o.type):
             s=SET(__o.type)
             for elt in self:
                 for thing in __o:
-                    if (thing == elt).v:
+                    if (thing == elt):
                         s.add(elt)
                         break
         else:
@@ -624,7 +761,8 @@ class SET:
         return '{ '+' ; '.join(l_)+' }'
 
     def __repr__(self) -> str:
-        return self.__str__()
+        l_=[x.__repr__() for x in self.__l]
+        return '{'+';'.join(l_)+'}'
 
     def inclusion(self):
         return 'SET('+self.type.__repr__()+')'
@@ -642,15 +780,16 @@ class SET:
         return B(self.deep_get()==__value.deep_get())
     
     def __ne__(self, __value: object) -> bool:
-        return B(not (self==__value).v)
+        return B(not (self==__value))
 
     
     
     def __iter__(self):
         return iter(self.__l)
 
-class CrossSet:
+class CrossSet(Types):
     def __init__(self,*t):
+        super().__init__()
         assert all(typ in (N,Z,R,C,S,B,EmptySet) or type(typ)==Parts  for typ in t)
         self.schema = t
 
@@ -687,8 +826,9 @@ class CrossSet:
     def __hash__(self) -> int:
         return hash(str(self))
 
-class Tuple:
+class Tuple(Types):
     def __init__(self,obj,typ:CrossSet):
+        super().__init__()
         self.type=typ
         self.v = tuple(obj)
         assert  len(obj) == len(typ.schema)
@@ -717,13 +857,19 @@ class Tuple:
         return True
 
     def __repr__(self) -> str:
-        return self.__str__()
+        return '('+';'.join([x.__repr__() for x in self.v])+')'
     
     def __str__(self) -> str:
-        return str(self.v)
+        return str(self.v).replace(',',';')
 
     def __getitem__(self,i):
         return self.v[i]
+    
+    def get(self,v):
+        v = default_functions.convert(v,N)
+        if v == 0 or v > len(self.v):
+            raise error.IndexError(v)
+        return self.v[v.value]
 
     def __iter__(self):
         return iter(self.v)
@@ -739,8 +885,9 @@ class Tuple:
         if type(__value) != Tuple:return B(True)
         return B(self.v!=__value.v)
 
-class Parts:
+class Parts(Types):
     def __init__(self,t):
+        super().__init__()
         assert t in (N,Z,R,C,B,S) or type(t)==CrossSet  or type(t)==Parts or t == EmptySet
         self.typ = t
     
@@ -795,14 +942,14 @@ class ZIntervalle:
         return cls(*[Z.from_str(elt) for elt in ch[1:-1].split(';')])
     
     def __iter__(self):
-        if (self.binf >=N(0)).v:
+        if (self.binf >=N(0)):
             
             self.binf = N(self.binf.value)
         self.i = self.binf
         return self
     
     def __next__(self):
-        if (self.i <=self.bsup).v:
+        if (self.i <=self.bsup):
             self.i+=N(1)
             return self.i-N(1)
         else:raise StopIteration
@@ -822,9 +969,9 @@ class Niterator:
         self.i+=N(1)
         return self.i-N(1)
 
-class EmptySet:
+class EmptySet(Types):
     def __init__(self):
-        pass
+        super().__init__()
     def __str__(self) -> str:
         return '∅'
     def __repr__(self) -> str:
@@ -948,7 +1095,89 @@ def has_type(obj,t):
     return type(obj)==t
 
 
+def full_typize(ch:str):
+    if ch =='':
+        return None
+    String,Set,Tup = False,0,False
+    for elt in TYPES_.keys():
+        if elt.recognize(ch):
+            return elt.from_str(ch)
+    
+    if ch[0]=='(' and ch[-1]==')':
+        ch_ =ch[1:-1]
+        l=[]
+        mot=''
+        for elt in ch_:
+            if elt=='"':
+                String=not String
+            elif elt == ';' and not String and Set ==0:
+                l.append(mot)
+                mot=''
+            else:
+                mot += elt
+        l.append(mot)
+        l_ = [full_typize(elt) for elt in l]
+        if any(type(elt)==Tuple for elt in l_):
+            return None
+        t = CrossSet(*[type(elt) for elt in l_])
+        return Tuple.from_str(ch,t)
+    
+    if ch=='∅' or ch == '{}':
+        return EmptySet()
+    
+    if ch[0]=='{' and ch[-1]=='}':
+        ch_ =ch[1:-1]
+        l=[]
+        mot=''
+        for elt in ch_:
+            if elt=='"':
+                String=not String
+            elif elt == '{' and not String:
+                Set +=1
+            elif elt == '}' and not String:
+                Set -=1
+            elif elt == '(' and not String:
+                if Tup:
+                    return None
+                Tup=True
+            elif elt == ')' and not String:
+                if  not Tup:
+                    return None
+                Tup=False
+            if elt == ';' and not String and Set ==0 and not Tup:
+                l.append(mot)
+                mot=''
+            else:
+                mot += elt
+        l.append(mot)
+        l_ = list(set([full_typize(elt) for elt in l]))
+        if l_==[EmptySet()]:
+            return None
+        test = l_[0]
+        if test==EmptySet():
+            test = l_[1]
+        t = type(test)
+        if t == SET:
+            test:SET
+            t = Parts(test.type)
+        
+        try:
+            for i in range(len(l_)):
+                l_[i] = default_functions.convert(l_[i],t)
+        except:
+            return None
+        
+        r=SET(t)
+        for elt in l_:
+            r.add(elt)
+        return r 
+    
+    return None
+
+
 
 
 if __name__=='__main__':
-    print(type(S))
+    print()
+    z = C.from_str('1')
+    print(z)

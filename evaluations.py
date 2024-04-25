@@ -6,7 +6,7 @@ def typize(l:list):
         if type(elt)==list:
             typize(elt)
         else:
-            r=default_types.attribute_type(elt)
+            r=default_types.full_typize(elt)
             if type(r) != type(None):
                 l[i]=r
 
@@ -27,7 +27,6 @@ def create_evaluating_list(expr:list):
     return l_
 
 def evaluate(l:list,variables,dictionary,function,alias,ex,k=0):#,stdout=sys.__stdout__):
-    
     simpl(l)
     assert type(k)==int
     for i,elt in enumerate(l):
@@ -35,13 +34,14 @@ def evaluate(l:list,variables,dictionary,function,alias,ex,k=0):#,stdout=sys.__s
             evaluate(elt,variables,dictionary,function,alias,ex,k+1)
             if len(l[i])==1:l[i]=l[i][0]
         elif type(elt)==str and elt in variables:
-            l[i] = variables[elt][1]
+            l[i] = variables[elt].get()
         elif type(elt)==str and elt in alias:
-            l[i] = variables[alias[elt]][1]
+            l[i] = variables[alias[elt]].get()
         elif type(elt)==str and elt[0]=='{' and elt[-1]=='}':
             l[i]=evaluate_sets(elt,variables,dictionary,alias,function,ex)
-        elif type(elt) == str and elt not in _parser_.kw:
-            l[i] = exec_func_dict(elt,variables,dictionary,function,ex)#,stdout=stdout)
+        elif type(elt) == str and elt not in _parser_.op:
+            if '·' in elt:l[i]=meth(elt,variables,dictionary,alias,ex)
+            else:l[i] = exec_func_dict(elt,variables,dictionary,function,ex)#,stdout=stdout)
     for i,elt in enumerate(l):
         if type(elt) != str: continue
         if elt == '^':
@@ -50,6 +50,8 @@ def evaluate(l:list,variables,dictionary,function,alias,ex,k=0):#,stdout=sys.__s
             del l[i]
 
     #execution * et / en m^ temps !! 
+    
+
     i=0
     while i < len(l):
         elt=l[i]
@@ -77,17 +79,26 @@ def evaluate(l:list,variables,dictionary,function,alias,ex,k=0):#,stdout=sys.__s
             if i == 0:
                 del l[i]
             else:
-                l[i-1]=l[i-1]+l[i+1]
-                del l[i]
-                del l[i]
+                try:
+                    l[i-1]=l[i-1]+l[i+1]
+                    del l[i]
+                    del l[i]
+                except AttributeError:
+                    raise error.UnsupportedOperation('+',default_types.stringify(type(l[i-1])),default_types.stringify(type(l[i+1])))
         elif elt == '-':
             if i == 0:
-                del l[i]
-                l[i]=-l[i]
+                try:
+                    l[i+1]=-l[i+1]
+                    del l[i]
+                except AttributeError:
+                    raise error.UnsupportedOperation('-',default_types.stringify(type(l[i+1])))
             else:
-                l[i-1]=l[i-1]-l[i+1]
-                del l[i]
-                del l[i]
+                try:
+                    l[i-1]=l[i-1]-l[i+1]
+                    del l[i]
+                    del l[i]
+                except AttributeError:
+                    raise error.UnsupportedOperation('-',default_types.stringify(type(l[i-1])),default_types.stringify(type(l[i+1])))
         else:
             i+=1
 
@@ -112,16 +123,24 @@ def evaluate(l:list,variables,dictionary,function,alias,ex,k=0):#,stdout=sys.__s
     for i,elt in enumerate(l):
         if type(elt) != str: continue
         if elt == '¬':
-            l[i] = default_types.B(l[i+1].__not__())
-            del l[i+1]
+            try:
+                l[i] = default_types.B(l[i+1].__not__())
+                del l[i+1]
+            except AttributeError:
+                raise error.UnsupportedOperation("¬",default_types.stringify(type(l[i+1])))
     
     for i in range(len(l)-1,-1,-1):
         elt=l[i]
         if type(elt) != str:continue
         if elt == '⇒':
-            l[i-1] = l[i-1].impl(l[i+1])
-            del l[i]
-            del l[i]
+            try:
+                l[i-1] = l[i-1].impl(l[i+1])
+                del l[i]
+                del l[i]
+            except AttributeError:
+                error.UnsupportedOperation('⇒',default_types.stringify(type(l[i-1])),default_types.stringify(type(l[i+1])))
+
+
 
     traiter(l,'⇔',lambda b1,b2:b1.equiv(b2))
     
@@ -150,36 +169,40 @@ def traiter(l,car,fct):
             i+=1
             continue
         if elt == car:
-            l[i-1] = fct(l[i-1],l[i+1])
-            del l[i]
-            del l[i]
+            try:
+                l[i-1] = fct(l[i-1],l[i+1])
+                del l[i]
+                del l[i]
+            except AttributeError:
+                raise error.UnsupportedOperation(car,default_types.stringify(type(l[i-1])),default_types.stringify(type(l[i+1])))
         else:
             i+=1
 
 def transform(ch:str):
     #'(2+3;7)' -> ['(','2','+','3',';','7',')']
     l=['']
-    S=0;s=False;chevron=0
+    S=0;s=False;chevron=0;dbrak = False
     for car in ch:
         if car =='{' and not s:
             if l[-1]!='':l.append('')
             S+=1
+        if car == '⟦' and not dbrak:
+            dbrak=True
+        if car == '⟧' and dbrak:
+            dbrak=False
         if car =='}' and not s : S-=1
         if car =='"':s=not s
         if car =='⟨':chevron+=1
         if car =='⟩':chevron-=1
 
-        if car in '∃∊+-×÷∧∨¬⇔⇒;()':
-            if S !=0:
+        if car in _parser_.op or car in "();":
+            if S !=0 or chevron or dbrak:
                 l[-1]+=car
                 continue
             if car ==';':
                 if S!=0 or s:
                     l[-1]+=car
                     continue
-            if chevron !=0:
-                l[-1]+=car
-                continue
             if l[-1]=='':
                 l[-1]=car
             else:
@@ -298,13 +321,13 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
                 if default_types.recognize_type(elt):
                     l_.append('"'+elt+'"')
                 elif elt in variables:
-                    l_.append(variables[elt][1]) 
+                    l_.append(variables[elt].get()) 
                 else:
                     _l_ = [elt]
                     typize(_l_)
                     l_.append(_l_[0])
             if not len(l_)==1:raise error.WrongSyntax()
-            return dictionary[f][1][l_[0]]
+            return dictionary[f][l_[0]]
         if not((f in function and type(function[f])!=Applications.Applications) or f in DEFAULT_FUNCTIONS):
             raise error.WrongSyntax()
         l_=[]
@@ -324,7 +347,11 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
             if default_types.recognize_type(elt):
                 l_.append('"'+elt+'"')
             elif elt in variables:
-                l_.append(f"variables['{elt}'][1]") 
+                l_.append(f"variables['{elt}'].get()") 
+            elif elt in dictionary:
+                l_.append(f"dictionary[elt]")
+            elif elt in function:
+                l_.append(f"function[elt]")
             elif elt=='':
                 continue
             else:
@@ -338,15 +365,49 @@ def exec_func_dict(ch:str,variables,dictionary,function,ex):#,stdout):
     f,a = ch[:-1].split('⟨')
     if not(f in function and type(function[f])==Applications.Applications):
         raise error.WrongSyntax()
-    f="function['"+f+"']"
+    f=function[f]
     l_args = []
     for elt in a.split(';'):
         l=_parser_.parse_a_sentence(elt)
         l=create_evaluating_list(l)
         typize(l)
         if l !=[]:l_args.append(evaluate(l,variables,dictionary,function,{},ex))
-    a = ','.join(f"l_args[{i}]" for  i in range(len(l_args)))
-    return eval(f+'('+a+')')
+    return f(*l_args)
+
+def exec_method(obj:default_types.Types,ch:str,variables,ex):
+    l = ch.split('$')
+    if l[-1]=='':l.pop()
+    f=l[0]
+    a=[]
+    for elt in l[1:]:
+        if elt in variables :
+            a.append(variables[elt].get())
+        elif elt[0]=="⟦":
+            l = elt[1:-1].split(";")
+            assert len(l)==2
+            binf = ex.eval_expr(l[0])
+            bsup = ex.eval_expr(l[1])
+            a.append(default_types.ZIntervalle(binf,bsup))
+        else:raise
+
+    return obj.call(f,*a)
+
+def meth(elt,variables,dictionnaries,alias,ex):
+    l=elt.split('·')
+    if len(l)!=2:
+        raise error.WrongSyntax()
+    if l[0] in variables:
+        l[0]=variables[l[0]].get()
+    elif l[0] in dictionnaries:
+        l[0]=dictionnaries[l[0]]
+    elif l[0] in alias:
+        l[0] = alias[l[0]]
+        l[0]=variables[l[0]].get()
+    else:raise
+    return exec_method(l[0],l[1],variables,ex)
 
 if __name__ == '__main__':
-    (create_evaluating_list(['"a"']))
+    l=create_evaluating_list(['10'])
+    print(l)
+    typize(l)
+    print(l)

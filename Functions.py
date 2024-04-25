@@ -1,15 +1,16 @@
-import default_functions,default_types, Executor,error
+import default_functions,default_types, Executor,error,Variable
 
 class Function:
-    def __init__(self,name,t_in,t_out,echo):
+    def __init__(self,name,t_in,t_out):
         self.name=name
         assert default_types.recognize_type(t_in) and default_types.recognize_type(t_out)
         self.types = (default_types.type_from_str(t_in),default_types.type_from_str(t_out))
         self.gl_bal=False
         self.restricted = False
         self.arg_names=()
-        self.echo=echo
         self.__doc__=''
+        self.VAR,self.FUNC,self.ALIAS,self.DICT={},{},{},{}
+        valid_name(name)
     
     def set_doc(self,ch:str):
         self.__doc__=ch
@@ -62,21 +63,25 @@ class Function:
         
         
 
-    def __call__(self,*vals):
+    def __call__(self,echo,*vals):
         if self.types[0] == default_types.Parts(default_types.EmptySet):
             if vals!=():
                 raise error.UnexpectedArgument(given=len(vals),req=0)
         elif type(self.types[0])!=default_types.CrossSet:
             if len(vals)!=1:
                 raise error.UnexpectedArgument(given=len(vals),req=1)
-            self.VAR[self.arg_names[0]]=[self.types[0],default_functions.convert(vals[0],self.types[0])]
+            var= Variable.Variable(self.types[0],self.arg_names[0])
+            var.set(vals[0])
+            self.VAR[self.arg_names[0]]=var
         else:
             if len(vals)!=default_functions.dim(self.types[0]):
                 raise error.UnexpectedArgument(given=len(vals),req=default_functions.dim(self.types[0]).value)
             for i in range(len(self.arg_names)):
-                self.VAR[self.arg_names[i]]=[self.types[0][i],default_functions.convert(vals[i],self.types[0][i])]
+                var= Variable.Variable(self.types[0][i],self.arg_names[i])
+                var.set(vals[i])
+                self.VAR[self.arg_names[i]]=var
 
-        ex = Executor.FuncExecutor(self.code,self.echo,self.VAR,self.FUNC,self.ALIAS,self.DICT)#il faut le coder !
+        ex = Executor.FuncExecutor(self.code,echo,self.VAR,self.FUNC,self.ALIAS,self.DICT)#il faut le coder !
         res=ex.execute()
         if self.types[1]==default_types.Parts(default_types.EmptySet):
             if type(res) == default_types.EmptySet:
@@ -89,3 +94,11 @@ class Function:
     
     def __repr__(self) -> str:
         return self.__repr
+
+def valid_name(ch:str):
+    if ch =='' or ' ' in ch:
+        raise error.InvalidName(ch)
+    if ch[0] not in 'abcdefghijklmnopqrstuvwxyz':
+        raise error.InvalidName(ch)
+    if any(car not in '1234567890AZERTYUIOPQSDFGHJKLMWXCVBNazertyuiopqsdfghjklmwxcvbn_\'₀₁₂₃₄₅₆₇₈₉' for  car in ch):
+        raise error.InvalidName(ch)

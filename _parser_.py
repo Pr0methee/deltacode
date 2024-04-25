@@ -1,5 +1,7 @@
-kw = '∃∊+-×÷∧∨¬⇔⇒⊆|^≔⩾=⊕⩽∀≠<>:├?⇝➣⇴□⟼⟶∄≜⋃⋂∖'#⟦⟧[]{}
+kw = '∃∊≔∀:⇝➣⇴□⟼⟶∄≜'#⟦⟧[]{}
+op='+-×÷∧∨¬⇔⇒⊆|^⩾=⊕⩽≠<>⋃⋂∖'
 t=("ϩ","ℕ","ℤ","ℝ","ℂ",'ℬ')
+indic = (chr(8472),'ℱ','δ')
 
 def without_comments(ch:str):
     r=''
@@ -13,7 +15,7 @@ def without_comments(ch:str):
             r +=car
         if car=='\n' and c:
             c=False
-    return r
+    return r.replace('\r','')
 
 
 def parse_in_sentences(ch:str):
@@ -32,19 +34,19 @@ def parse_in_sentences(ch:str):
         if car =='/' and not s :sc-=1
 
         if car =='.' and not s and sc ==0 and not d:
+            if a:
+                a=False
             l.append(mot)
             mot=''
         elif car =='\n' and not s and sc==0 and not d :
             if a :
-                l.append(mot)
-                a=False
-                mot=''
+                raise
             continue
         elif car =='@' and not s and sc ==0 and not d:
             assert mot.replace(' ','') ==''
             a=True
             mot='@'
-        elif car ==' ' and not s and sc==0 and not d:
+        elif car ==' ' and not s and sc==0 and not d and not a:
             continue
         else:
             if car =='#' and not d:continue
@@ -54,6 +56,71 @@ def parse_in_sentences(ch:str):
     while '' in l:
         l.remove('')
     return l
+
+def parse_types(ch:list[str])-> list[list[str]]:
+    mot=''
+    l=[[]]
+    comp = False
+    parenthesis = 0
+    d=False
+    for sentence in ch:
+        for car in sentence:
+            if car =='#':d=not d
+
+            if car in indic and not comp and not d:
+                comp=True
+                l[-1].append(mot)
+                mot = car
+            elif car in t and not comp and not d:
+                l[-1].append(mot)
+                l[-1].append(car)
+                mot=''
+            else: 
+                mot += car
+            
+            if car in '()' and comp:
+                if car =='(':
+                    parenthesis +=1
+                else:
+                    parenthesis -=1
+                assert parenthesis >=0
+                if parenthesis == 0:
+                    comp=False
+                    l[-1].append(mot)
+                    mot=''
+
+        if mot != '':
+            l[-1].append(mot)
+            mot=''
+        verif(l[-1])
+        l.append([])
+    return l
+
+def verif(l):
+    i=0
+    while i  < len(l):
+        elt = l[i]
+        if (elt == '×' and i != 0 and any(car in t for car in l[i-1])) or (any(car in t for car in l[i]) and i != 0 and l[i-1]!='' and l[i-1][-1]== '×'):
+            l[i-1]+=elt
+            del l[i]
+        else:
+            i+=1
+
+def parse_a_sentence_(ch:list[str]):
+    if ch == []:return []
+    if len(ch) == 1:
+        return parse_a_sentence(ch[0])
+    
+    l=[]
+    for elt in ch:
+        if any(car in t or car in indic for car in elt):
+            #c'est un type
+            l.append(elt)
+        else:
+            l_ = parse_a_sentence(elt)
+            l+=l_
+    return l
+    
 
 def parse_a_sentence(ch:str):
     if ch =='':return []
@@ -67,7 +134,7 @@ def parse_a_sentence(ch:str):
         if car =='{' and not s:SET +=1
         if car  == '\\' and not s:sc+=1
         if car == '⟨' and not s and sc==0: chevron+=1
-        if (car in kw ) and not s and SET==0 and sc==0 and chevron==0:
+        if (car in kw or car in op ) and not s and SET==0 and sc==0 and chevron==0:
             if car == '×' and mot != '' and mot[-1] in t:
                 mot+=car
                 continue
@@ -90,5 +157,6 @@ def parse_a_sentence(ch:str):
 def parse(ch:str):
     ch=without_comments(ch)
     l_=parse_in_sentences(ch)
-    return (list(map(parse_a_sentence,l_)))#[parse_a_sentence(ch) for ch in l_]
+    l_=(parse_types(l_))
+    return (list(map(parse_a_sentence_,l_)))#[parse_a_sentence(ch) for ch in l_]
 #(chr(2080))

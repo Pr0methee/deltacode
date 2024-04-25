@@ -41,7 +41,7 @@ class TypeError_(Exception):
     
 class InvalidName(Exception):
     def __init__(self, name) -> None:
-        super().__init__(f"Invalid name for an object : {name}")
+        super().__init__(f"Invalid name for an object : '{name}'")
     def name(self):
         return 'InvalidName : '
 
@@ -90,9 +90,20 @@ class EvaluationError(Exception):
     def name(self):
         return "EvaluationError : "
 
+class ModuleError(Exception):
+    def __init__(self, mod) -> None:
+        super().__init__(f"Error while trying to load module : {mod} ")
+    
+    def name(self):
+        return "ModuleError : "
+
 class UnsupportedOperation(Exception):
-    def __init__(self, op,t) -> None:
-        super().__init__(f"Unsupported opération {op} on {t} objects")
+    def __init__(self, op,t1,t2=None) -> None:
+        if t2 is None:
+            super().__init__(f"Unsupported opération {op} on {t1} objects")
+        else:
+            super().__init__(f"Unsupported opération {op} between {t1} and {t2} objects")
+
     
     def name(self):
         return "UnsupportedOperation : "
@@ -112,3 +123,38 @@ class DeniedAccessError(Exception):
     
     def name(self):
         return "DeniedAccessError : "
+
+class IterationError(Exception):
+    def __init__(self, t) -> None:
+        super().__init__(f"Unable to iterate on {t} objects")
+    
+    def name(self):
+        return "IterationError : "
+
+class InvalidKeyError(Exception):
+    def __init__(self, k) -> None:
+        super().__init__(f"Unable to access the value associated with {k} : it does not exists.")
+    
+    def name(self):
+        return "InvalidKeyError : "
+    
+class TooEarlyToAccessError(Exception):
+    def __init__(self, v) -> None:
+        super().__init__(f"Unable to access the value of {v} : it has not been defined.")
+    
+    def name(self):
+        return "TooEarlyToAccessError : "
+    
+class IndexError(Exception):
+    def __init__(self, v) -> None:
+        super().__init__(f"Index {v} is not correct")
+    
+    def name(self):
+        return "IndexError : "
+
+class AttributeError(Exception):
+    def __init__(self, f,typ) -> None:
+        super().__init__(f"Unknown method {f} on {typ} objects.")
+    
+    def name(self):
+        return "AttributeError : "

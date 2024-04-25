@@ -1,4 +1,4 @@
-import default_types,evaluations,default_functions,error
+import default_types,evaluations,default_functions,error,Variable
 
 
 class Applications:
@@ -6,6 +6,7 @@ class Applications:
         self.name =nom
         assert default_types.recognize_type(t_entree) and default_types.recognize_type(t_sortie)
         self.types = (default_types.type_from_str(t_entree),default_types.type_from_str(t_sortie))
+        valid_name(nom)
 
     def set_args_name(self,*noms:str):
         if self.types[0] == default_types.Parts(default_types.EmptySet):
@@ -24,6 +25,7 @@ class Applications:
     def set_expr(self,expr):
         if type(expr)!=list:expr=[expr]
         self.expr =expr
+        self.__doc__=self.__str__()
     
     def __call__(self,*vals):
         if self.types[0] == default_types.Parts(default_types.EmptySet):
@@ -33,15 +35,20 @@ class Applications:
         elif type(self.types[0])!=default_types.CrossSet:
             if len(vals)!=1:
                 raise error.UnexpectedArgument(given=len(vals),req=1)
+            var= Variable.Variable(self.types[0],self.arg_names[0])
+            var.set(vals[0])
             ARGS = {
-                self.arg_names[0]:[self.types[0],default_functions.convert(vals[0],self.types[0])]
+                self.arg_names[0]:var
             }
         else:
             ARGS = {}
             if len(vals)!=default_functions.dim(self.types[0]):
                 raise error.UnexpectedArgument(given=len(vals),req=default_functions.dim(self.types[0]).value) 
             for i in range(len(self.arg_names)):
-                ARGS[self.arg_names[i]]=[self.types[0][i],default_functions.convert(vals[i],self.types[0][i])]
+                var= Variable.Variable(self.types[0][i],self.arg_names[i])
+                var.set(vals[i])
+                ARGS[self.arg_names[i]]=var
+                
         FUNC = {self.name:self}
         if self.expr[0] == "➣":
             l = split(self.expr)
@@ -68,11 +75,18 @@ class Applications:
     def __str__(self) -> str:
         r= self.name+' : '+default_types.stringify(self.types[0])+' ⟶  '+default_types.stringify(self.types[1])
         try:
-            r+='\n'+';'.join(self.arg_names) + ' ⟼  '+' '.join(self.expr)
-        except:pass
+            r+='\n'+' '*len(self.name+' : ')+';'.join(self.arg_names) + ' ⟼  '+' '.join(self.expr)
+        except Exception as err:
+            pass
         return r
+    
     def __repr__(self) -> str:
-        return self.__str__()
+        r= self.name+' : '+default_types.stringify(self.types[0])+' ⟶  '+default_types.stringify(self.types[1])
+        try:
+            r+='\n'+';'.join(self.arg_names) + ' ⟼  '+' '.join(self.expr)
+        except:
+            pass
+        return r
 
 
 def split(ch):
@@ -97,3 +111,11 @@ def cut(ch):
         else:
             expr.append(car)
     return cond,expr
+
+def valid_name(ch:str):
+    if ch =='' or ' ' in ch:
+        raise error.InvalidName(ch)
+    if ch[0] not in 'abcdefghijklmnopqrstuvwxyz':
+        raise error.InvalidName(ch)
+    if any(car not in '1234567890AZERTYUIOPQSDFGHJKLMWXCVBNazertyuiopqsdfghjklmwxcvbn_\'₀₁₂₃₄₅₆₇₈₉' for  car in ch):
+        raise error.InvalidName(ch)

@@ -1,3 +1,4 @@
+#coding : utf-8
 from default_functions import DEFAULT_FUNCTIONS 
 
 def isfloat(ch:str):
@@ -7,7 +8,7 @@ def isfloat(ch:str):
     except:
         return False
 #div euclidienne : '├'
-
+op=("⊆","∊",'÷','×','∧','∨','¬','⇒','⊕','⇔','≠','⩾','⩽',"⋂","⋃",'∖','+','=','^','-','|')
 table = {
     "\exists":"∃",
     "\in":"∊",
@@ -62,12 +63,12 @@ table = {
     '\\alias':'≜',
     "\inter":"⋂",
     "\\union":"⋃",
-    "((":'⦅',
-    '))':'⦆',
     '\(':'⟨',
     '\)': '⟩',
     '\setminus':'∖',
-    '\midpoint':'·'
+    '\midpoint':'·',
+    '\F':'ℱ',
+    '\D':'δ'
 #⦅⦆,⟨⟩ 
 }
 
@@ -87,7 +88,7 @@ def compile(text:str):
 
 def colorise(text:str):
     c,l=0,2
-    d={'kw':[],'t':[],'v':[],'str':[],'n':[],'label':[],'B':[],'h':[],'i':[],'f':[],'intervalle':[],'@':[],'comm':[]}
+    d={'kw':[],'t':[],'v':[],'str':[],'n':[],'label':[],'B':[],'h':[],'i':[],'f':[],'intervalle':[],'@':[],'comm':[],'op':[]}
     s,h,iz,ir,hide,com=False,False,False,False,False,False
     mot=''
     for j in range(len(text)) :
@@ -96,8 +97,6 @@ def colorise(text:str):
             com=True
         if car =='⟦' and not s and not h:
             iz=True
-        #if car  == '[' and not s:
-        #    ir=True
         if car == '@' and not s and not h:
             hide=True
 
@@ -153,7 +152,8 @@ def colorise(text:str):
         elif car in ('⊥',"⊤",'∅'):
             d['v'].append((l,c))
             mot=''
-        
+        elif car in op and not s:
+            d['op'].append((l,c))
         if car == '#'  and not com and not s:
             h=not h
             d['h'].append((l,c))
