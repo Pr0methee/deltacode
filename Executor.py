@@ -47,6 +47,7 @@ class Executor:
         self.BOUCLE=False
         self.echo=echo
         self.ECHO=True
+        self.saveable = True
     
     def create_variable(self,name,typ,way='∊'):
         if name in self.VARIABLES or name in self.FUNCTIONS or name in  self.ALIAS or name in self.DICTIONARY:
@@ -171,7 +172,7 @@ class Executor:
             sys.stdin=defstdin
 
         if flag:
-            if not self.STOP and name.replace(' ','') != '':
+            if not self.STOP and name.replace(' ','') != '' and self.saveable:
                 data = {
                     'Variables' : {k:v.__repr__() for k,v in self.VARIABLES.items()},
                     'Dictionnaires' : {k:v.representation() for k,v in self.DICTIONARY.items()},
@@ -359,6 +360,8 @@ class Executor:
         self.echo.config(state='disabled')
 
     def eval_expr(self,l:list[str]):
+        if any('ask' in obj for obj in l):
+            self.saveable=False
         ph_=[]
         for i,elt in enumerate(l):
             if i==0:
@@ -402,6 +405,7 @@ class Executor:
         #Refaire !
         Ens=code[3]
         if Ens == 'ℕ':
+            self.saveable=False
             Ens=default_types.Niterator()
         elif Ens in self.VARIABLES:
             if self.VARIABLES[Ens].type == default_types.S or type(self.VARIABLES[Ens].type) == default_types.Parts:
@@ -505,10 +509,9 @@ class Executor:
         obj = obj.split('$')
         if obj[0] not in self.DICTIONARY:
             raise error.NameError(obj[0])
+        
         k = self.eval_expr([obj[1]])
-        k =convert(k,self.DICTIONARY[obj[0]]._in)
         v = self.eval_expr(code[2:])
-        v = convert(v,self.DICTIONARY[obj[0]].out)
         
 
         self.DICTIONARY[obj[0]][k]=v

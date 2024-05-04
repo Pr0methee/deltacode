@@ -25,6 +25,8 @@ class Variable:
         return stringify(self.type)+';'+self.value.__repr__()
 
 def valid_name(ch:str):
+    if ch in default_functions.DEFAULT_FUNCTIONS:
+        raise error.InvalidName(ch)
     if ch =='' or ' ' in ch:
         raise error.InvalidName(ch)
     if ch[0] not in 'abcdefghijklmnopqrstuvwxyz':

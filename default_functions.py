@@ -1,13 +1,15 @@
 import default_types #import *
 import sys,error
 
-DEFAULT_FUNCTIONS = ['Im', 'Re', 'ask', 'card', 'echo','convert','dim','card','help']
+DEFAULT_FUNCTIONS = ['ask', 'card', 'echo','convert','dim','help']
 
 def help(v):
     echo(v.__doc__)
+    return default_types.EmptySet()
 
 def echo(*v):
     print(*v)#,file=file)
+    return default_types.EmptySet()
 
 def ask(t,ch):
     global ANS
@@ -19,12 +21,6 @@ def ask(t,ch):
         rep = input(ch)
         if(t.recognize(rep)):break
     return t.from_str(rep)
-
-def Re(c):
-    return c.re
-
-def Im(c):
-    return c.im
 
 def convert(obj,typ):
     if type(typ)==str:

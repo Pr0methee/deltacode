@@ -1,8 +1,10 @@
 import json,file
-import Variable,default_types,Dictionnary,Applications,_parser_,Functions,default_functions
+import Variable,default_types,Dictionnary,Applications,_parser_,Functions,default_functions,error
 
 def load(path):
     data=file.get_json(path)
+    if type(data)==str:
+        raise error.ModuleError(path)
 
     VARIABLES = {}
     DICTIONNARY = {}
@@ -87,6 +89,8 @@ def load(path):
 
 def load_some(path,thing):
     data=file.get_json(path)
+    if type(data)==str:
+        raise error.ModuleError(path)
 
     for k,v in data["Variables"].items():
         if k != thing : continue

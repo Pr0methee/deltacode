@@ -49,6 +49,8 @@ class Dictionnary(Types):
         return (stringify(self._in),stringify(self.out),{k.__repr__():v.__repr__() for k,v in self.d.items()})
     
 def valid_name(ch:str):
+    if ch in default_functions.DEFAULT_FUNCTIONS:
+        raise error.InvalidName(ch)
     if ch =='' or ' ' in ch:
         raise error.InvalidName(ch)
     if ch[0] not in 'abcdefghijklmnopqrstuvwxyz':

@@ -35,6 +35,9 @@ class App(Tk):
         self.new_window = Button(self.f1,text='+',command=self.new_tab)
         self.new_window.pack(side=RIGHT)
         
+        self.clear = Button(self.f1,text='C',command=self.clear_out)
+        self.clear.pack(side=RIGHT)
+        
         
         self.f2=Frame(self)
         self.f2.grid(row=1,column=0,sticky=NSEW)
@@ -54,6 +57,11 @@ class App(Tk):
         self.exec.tag_config("inf",foreground='white')
         self.path=''
     
+    def clear_out(self):
+        self.exec.config(state='normal')
+        self.exec.delete("0.0",END)
+        self.exec.config(state='disabled')
+
     def new_tab(self,name='New File'):
         text=scrolledtext.ScrolledText(self.notebook,cursor="xterm black",font=("Consolas",14))
         text.pack(side=TOP,expand=True,fill=BOTH)
