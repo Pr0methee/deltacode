@@ -1,0 +1,127 @@
+%Dictionnaires, Applications & Fonctions
+@HIDE.
+%Il est possible de créer des dictionnaires en deltacode.
+%Comme tout objet, il doit être déclarer comme suit :
+%dict : T1 \dict T2.
+%où T1 est le type des clès et T2 le type des valeurs.
+%exemple :
+
+dict : \S \dict \S.
+
+% Ensuite, il faut lier les clés et les valeurs ensemble. Cela ce fait de la manière suivante :
+
+dict$"nom de famille" := "Dupont".
+dict$"prénom" := "Charles".
+
+%Ensuite pour récupérer les valeurs, il faut appeler le dictionnaire ainsi :
+
+dict$"prénom".
+
+%Par exemple si vous souhaitez faire un dictionnaire qui va associer à chaque lettre sa position dans l'alphabet, on fait:
+
+\exists i \in \N.
+\exists ch \in \S.
+i := 1.
+ch := "abcdefghijklmnopqrstuvwxyz".
+
+alphabet : \N \dict \S.
+\forall car \in ch : \
+alphabet$i := car.
+i := i+1.
+/.
+
+%Regardons maintenant l'utilisation des applications.
+%Les applications sont des sortes de fonctions.
+%Cependant, elles n'ont accès qu'à elle-même et aux arguments.
+%Elles sont des applications au sens mathématique du terme.
+%exemple :
+
+f : \R \to \R.
+f : x \mapsto x+1.
+
+%On vient par exemple de définir la fonction de \R dans \R qui à x associe x+1
+
+%On peut faire d'autres choses comme des fonctions récursives :
+
+factorielle : \N \to \N.
+factorielle : n \mapsto \case n = 0 : 1 \case \True : n \mul factorielle\(n-1\).
+
+%On notera que l'utilisation des structures conditionnelles se font légèrement différemment.
+%Lorsque l'on souhaite les appeler, on procède ainsi :
+
+\exists k \in \N. %simple test
+\exists x \in \R. %idem
+@SHOW. %idem
+x := f\(2\). % Notez bien que l'on n'aurais pas pu utiliser k à la place de x car f renvoie un \R alors que k est dans \N.
+k := factorielle\(0\).
+k := factorielle\(5\).
+
+%Regardons maintenant les fonctions...
+%On crée une fonction dans un bloc délimité par des #.
+%On peut par exemple refaire notre application f sous forme de fonction :
+#
+g : \R \to \R. %Nom de la fonction
+\(x\). %nom des arguments
+"Fonction qui a x associe x+1". % On peut rajouter une docstring pour clarifier le fonctionnement d'une fonction
+%corps de la fonction
+\mapsto x +1.
+#
+x := g$x.
+
+%On peut accéder aux variables globales dans une fonction
+%par exemple :
+#
+h : \P(\empty) \to \P(\empty).
+\(\empty\).
+echo$k.
+#
+
+h$. %ça fonctionne !
+
+%Cependant si on considère :
+#
+fct : \P(\empty) \to \P(\empty).
+\(\empty\).
+k := 5.
+#
+
+
+fct$.
+echo$k.
+%On remarque que k n'a pas changé de valeur de manière globale. 
+%Si on veut que k change de valeur de manière globale, il faut rajouter @GLOBAL dans la signature de la fonction :
+
+#
+fct_2 : \P(\empty) \to \P(\empty).
+\(\empty\).
+@GLOBAL.
+k := 5.
+#
+
+fct_2$.
+echo$k.
+%La valeur de k a bien été modifiée.
+
+%Il est possible de créer des fonctions "restreintes". C'est à dire qu'elles ne peuvent pas être appelées directement par l'utilisateur. Elles peuvent cependant être appelées par une autre fonction.
+#
+fonction_1 : \P(\empty) \to \P(\empty).
+\(\empty\).
+@RESTRICT.
+\exists j \in \R.
+j := 5.
+echo$j.
+#
+
+%fonction_1$.%essayez pour voir...
+
+#
+fonction_2 : \P(\empty) \to \P(\empty).
+\(\empty\).
+fonction_1$.
+#
+
+fonction_2$.
+
+%lorsqu'on crée une fonction on peut évidemment les déclarer comme ayant des effets globaux, étant restreintes et ayant une doc-string.
+%cependant il faut respecter cet ordre dans la signature de la fonction.
+

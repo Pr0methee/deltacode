@@ -1,0 +1,227 @@
+@HIDE.
+\exists pi \in \R.
+\exists e \in \R.
+
+pi := 3,141592653589793.
+e :=  2,7182818284 59045.
+
+factorielle : \N \to \N .
+factorielle : n \mapsto \case n=0 : 1 \case \True: n\mulfactorielle\(n-1\).
+
+abs : \R \to \R.
+abs : x \mapsto \case x<0 : -x \case \True : x.
+
+
+#
+exp : \R \to \R.
+\(x\).
+
+\exists temp\in \R.
+
+\case x<0 \do \
+temp := -x.
+\mapsto 1\div(exp$temp).
+/\case x = 0 \do \
+\mapsto 1.
+/\case x=1\do \
+\mapsto e.
+/\case x>e \do \
+temp := x-1.
+\mapsto exp$temp \mul e.
+/.
+
+temp := 0.
+\forall n \in |[0;25]|: \
+temp := temp + x^n\divfactorielle\(n\).
+/.
+\mapsto temp.
+#
+
+#
+ln : \R \to \R.
+\(x\).
+
+\case x\le0 \do \
+@RAISE RunTimeException("DomainException","x must be strictly greater that 0").
+/.
+
+\exists temp \in \R.
+
+\case x=1 \do \
+\mapsto 0.
+/\case x = e \do \
+\mapsto 1.
+/\case x>1,5 \do \
+temp :=x\div e.
+\mapsto ln$temp +1.
+/\case x<0,5 \do \
+temp := e\mul x.
+\mapsto ln$temp -1.
+/.
+
+temp := 0.
+\forall n \in |[1;25]| : \
+temp := temp + ((-1)^(n+1)\div n)\mul (x-1)^n.
+/.
+\mapsto temp.
+#
+
+#
+sqrt : \R \to \R.
+\(x\).
+
+\case x<0 \do \
+@RAISE RunTimeException("DomainException","square root of a negative number does not exist").
+/.
+
+\exists temp \in \R.
+\forall i \in \N : \
+\case i^2>x \do \
+@HALT.
+/.
+temp:=i.
+/.
+
+\case temp^2=x\do \
+\mapsto temp.
+/.
+
+\forall i \in |[1;20]| : \
+temp := (temp + x\div temp)\div 2.
+
+\case temp^2=x \do \
+\mapsto temp.
+/.
+/.
+
+\mapsto temp.
+#
+
+#
+cos : \R \to \R.
+\(x\).
+
+\exists temp \in \R.
+
+\case x<0 \do \
+temp := -x.
+\mapsto cos$temp.
+/.
+\case x = 0 \do \
+\mapsto 1.
+/.
+\case x\gepi \do \
+temp := x-pi.
+\mapsto -cos$temp.
+/.
+
+temp := 1.
+\forall i \in |[1;10]| : \
+temp := temp + (x^(2\mul i) \div factorielle\(2\mul i\)) \mul (-1)^i.
+/.
+\mapsto temp.
+#
+
+#
+sin : \R \to \R.
+\(x\).
+
+\exists temp \in \R.
+
+\case x<0 \do \
+temp := -x.
+\mapsto -sin$temp.
+/.
+\case x = 0 \do \
+\mapsto 0.
+/.
+\case x\gepi \do \
+temp := x-pi.
+\mapsto -sin$temp.
+/.
+
+temp := 0.
+\forall i \in |[0;10]| : \
+temp := temp + (x^(2\mul i+1) \div factorielle\(2\mul i+1\)) \mul (-1)^i.
+/.
+\mapsto temp.
+#
+
+#
+arccos : \R \to \R.
+\(x\).
+
+\case x<-1 \lor x>1 \do \
+@RAISE RunTimeException("DomainException","arccos is defined on [-1;1]").
+/.
+
+\case x=1\do\
+\mapsto 0.
+/ \case x=-1 \do \
+\mapsto pi.
+/.
+
+\exists c \in \R.
+\exists c_1 \in \R.
+\exists c_2 \in \R.
+
+c_1:=1.
+c_2 := 0.
+
+\forall i \in \N : \
+c := c_1 + (cos$c_1-x)\div sin$c_1.
+
+
+c_2 := c_1.
+c_1 := c.
+
+\case  abs\(c_1-c_2\) < 10^(-7) \do \
+@HALT.
+/.
+
+/.
+
+\mapsto c.
+#
+
+#
+arcsin : \R \to \R.
+\(x\).
+
+\case x<-1 \lor x>1 \do \
+@RAISE RunTimeException("DomainException","arccos is defined on [-1;1]").
+/.
+
+\case x=1\do\
+\mapsto pi\div2.
+/ \case x=-1 \do \
+\mapsto -pi\div2.
+/.
+
+\exists c \in \R.
+\exists c_1 \in \R.
+\exists c_2 \in \R.
+
+c_1:=-0,12.
+c_2 := 1.
+
+\forall i \in \N : \
+c := c_1 - (sin$c_1-x)\div cos$c_1.
+
+
+c_2 := c_1.
+c_1 := c.
+
+\case  abs\(c_1-c_2\) < 10^(-7) \do \
+@HALT.
+/.
+
+/.
+
+\mapsto c.
+#
+
+\exists x \in \R.
+x := 0,2.
+x:=arccos$x.
+

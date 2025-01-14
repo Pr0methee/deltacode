@@ -4,15 +4,18 @@ stringify = default_types.stringify
 Types= default_types.Types
 
 class Dictionnary(Types):
-    def __init__(self,t1,t2,name):
+    def __init__(self,t1,t2,name,meth=False):
         super().__init__()
         self._in=t1
         self.out = t2
         self.d = {}
         self.__doc__ = f"""Dictionnary :{name}\n{stringify(t1)} ⇴ {stringify(t2)}\nKeys : Values \n"""
-        valid_name(name)
+        valid_name(name,meth)
         self.name=name
-        
+        self.glob=True
+
+    def set_glob(self,s:bool):
+        self.glob=s
 
     def __getitem__(self,k):
         k = default_functions.convert(k,self._in)
@@ -38,7 +41,6 @@ class Dictionnary(Types):
             r.add(v)
         return r
 
-    
     def __str__(self) -> str:
         return self.__doc__
     
@@ -46,9 +48,14 @@ class Dictionnary(Types):
         return self.__str__()
     
     def representation(self):
-        return (stringify(self._in),stringify(self.out),{k.__repr__():v.__repr__() for k,v in self.d.items()})
+        return stringify(self._in),stringify(self.out),{k.__repr__():v.__repr__() for k,v in self.d.items()}
     
-def valid_name(ch:str):
+def valid_name(ch:str,meth:bool):
+    if meth:
+        if ch.startswith('me·'):
+            valid_name(ch[3:],False)
+            return
+
     if ch in default_functions.DEFAULT_FUNCTIONS:
         raise error.InvalidName(ch)
     if ch =='' or ' ' in ch:

@@ -1,0 +1,26 @@
+\exists M\(\K\) \inherit \Omega.
+
+#
+M\midpointstart : \N\mul\N \to \P(\empty).
+\(n;m\).
+
+\case \lnot (\K \include \C) \do \
+@RAISE RunTimeException("ParameterException","Can only create a matrix with numeric coeficients").
+/.
+
+\case n=0 \lor m= 0 \do \
+@RAISE RunTimeException("ValueException","n and m must be different of 0").
+/.
+
+\exists me\midpointn \in \N.
+\exists me\midpointm\in \N.
+me\midpointn := n.
+me\midpointm := m.
+#
+
+\exists m \in M\(\R\).
+m := M\(\R\)\(1;9\).
+
+\exists b \in \B.
+b := set_of$m \include M\(\C\).
+

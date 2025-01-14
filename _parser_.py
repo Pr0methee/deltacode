@@ -1,7 +1,8 @@
-kw = '∃∊≔∀:⇝➣⇴□⟼⟶∄≜'#⟦⟧[]{}
-op='+-×÷∧∨¬⇔⇒⊆|^⩾=⊕⩽≠<>⋃⋂∖'
-t=("ϩ","ℕ","ℤ","ℝ","ℂ",'ℬ')
-indic = (chr(8472),'ℱ','δ')
+import default_types
+kw = '∃≔∀:⇝➣⇴□⟼⟶∄≜⊃│;'#⟦⟧[]{}
+op='+-×÷∧∨¬⇔⇒⊆∊|^⩾=⊕⩽≠<>⋃⋂∖'
+t=("𝒮","ℕ","ℤ","ℝ","ℂ",'𝔹')
+indic = (chr(8472),'ℱ','𝒟')
 
 def without_comments(ch:str):
     r=''
@@ -17,12 +18,9 @@ def without_comments(ch:str):
             c=False
     return r.replace('\r','')
 
-
 def parse_in_sentences(ch:str):
-    #l_=parse_g(ch)
-    #if l_ == 'ERROR':return l_
     l=[]
-    s=False;sc=0;mot='';a=False;d=False#string,sous-code,actual word,arobas, dièse ?
+    s=False;sc=0;mot='';a=False;d=False;et=0#string,sous-code,actual word,arobas, dièse,& ?
     for car in ch:
         if car =='#':
             d=not d
@@ -33,7 +31,7 @@ def parse_in_sentences(ch:str):
         if car =='\\' and not s:sc+=1
         if car =='/' and not s :sc-=1
 
-        if car =='.' and not s and sc ==0 and not d:
+        if car =='.' and not s and sc ==0 and not d and et<=1:
             if a:
                 a=False
             l.append(mot)
@@ -46,6 +44,16 @@ def parse_in_sentences(ch:str):
             assert mot.replace(' ','') ==''
             a=True
             mot='@'
+        elif car =="&" and not s and sc ==0 and not d and et==0:
+            l.append(mot)
+            et=1
+            mot='&'
+        elif car =='(' and et !=0:
+            et+=1
+            mot+=car
+        elif car ==')' and et !=0:
+            et-=1
+            mot+=car
         elif car ==' ' and not s and sc==0 and not d and not a:
             continue
         else:
@@ -71,7 +79,7 @@ def parse_types(ch:list[str])-> list[list[str]]:
                 comp=True
                 l[-1].append(mot)
                 mot = car
-            elif car in t and not comp and not d:
+            elif car in t and not comp and not d and (mot=='' or (mot[-1]!='$' and mot[-1] != '⟨')):
                 l[-1].append(mot)
                 l[-1].append(car)
                 mot=''
@@ -92,7 +100,6 @@ def parse_types(ch:list[str])-> list[list[str]]:
         if mot != '':
             l[-1].append(mot)
             mot=''
-        verif(l[-1])
         l.append([])
     return l
 
@@ -120,7 +127,6 @@ def parse_a_sentence_(ch:list[str]):
             l_ = parse_a_sentence(elt)
             l+=l_
     return l
-    
 
 def parse_a_sentence(ch:str):
     if ch =='':return []
@@ -130,21 +136,18 @@ def parse_a_sentence(ch:str):
     s=False;SET = 0;sc=0;chevron=0
     for car in ch:
         if car =='"':s=not s
-        if car ==' ' and not s:continue
-        if car =='{' and not s:SET +=1
+        if car ==' ' and not s and sc==0:continue
+        if (car =='{' or car=='⟦') and not s:SET +=1
         if car  == '\\' and not s:sc+=1
         if car == '⟨' and not s and sc==0: chevron+=1
         if (car in kw or car in op ) and not s and SET==0 and sc==0 and chevron==0:
-            if car == '×' and mot != '' and mot[-1] in t:
-                mot+=car
-                continue
             if mot !='':
                 l.append(mot)
                 mot=''
             l.append(car)
         else:
             mot +=car
-        if car =='}'and not s:
+        if (car =='}' or car == '⟧')and not s:
             SET -=1
         if car =='/' and not s : sc-=1
         if car == '⟩' and not s and sc==0: chevron-=1
@@ -152,11 +155,36 @@ def parse_a_sentence(ch:str):
     return l
 
 
-        
-
-def parse(ch:str):
+def parse(ch:str, obj=None):
+    if obj is None:
+        obj = dict()
     ch=without_comments(ch)
     l_=parse_in_sentences(ch)
     l_=(parse_types(l_))
-    return (list(map(parse_a_sentence_,l_)))#[parse_a_sentence(ch) for ch in l_]
+    l_ = [parse_a_sentence_(elt) for elt in l_]
+    for elt in l_:
+        recognize_cross_set(elt,obj)
+    return l_#[parse_a_sentence(ch) for ch in l_]
 #(chr(2080))
+
+def recognize_cross_set(ph:list[str],obj):
+    i=0
+    while i < len(ph):
+        elt=ph[i]
+        if elt in t or any(car in indic for car in elt) or elt in obj:
+            if i!=0 and ph[i-1] != "" and ph[i-1][-1]=='×':
+                ph[i-1]+= ph[i]
+                del ph[i]
+            else:i+=1
+        elif elt == '×':
+            if i!=0 and (default_types.CrossSet.recognize_type(ph[i-1],obj) or default_types.recognize_type(ph[i-1],obj)):
+                ph[i-1]+= ph[i]
+                del ph[i]
+            else:i+=1
+        else:
+            i+=1
+
+
+
+if __name__=='__main__':
+    print(parse('\n⟼⊥.\n'))
