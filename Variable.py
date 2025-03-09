@@ -91,8 +91,9 @@ class Attribute(Variable):
         self.glob=False
 
 def create_var(typ,nom,meth=False):
-    if meth:
-        if not nom.startswith('me·'):raise error.InvalidName(nom)
+    if nom.startswith('me·') and not meth:
+        raise error.InvalidName(nom)
+    elif nom.startswith('me·'):
         return Attribute(typ,nom)
     if nom=='':
         raise error.InvalidName(nom)

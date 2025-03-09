@@ -3,7 +3,7 @@ import error
 
 DEFAULT_FUNCTIONS = ['ask', 'card', 'echo','convert','dim','help','set_of','ordering']
 
-def set_of(obj):
+def set_of(obj):#
     """
     set_of : Ω ⟶ 𝕋.
     Returns the type of the give object    
@@ -12,18 +12,18 @@ def set_of(obj):
         return obj.get_type()
     return type(obj)
 
-def help(v):
+def help(v):#
     """help : Ω ⟶ ℘(∅)\nShows the documentation of the given object"""
     echo(v.__doc__)
     return default_types.EmptySet()
 
-def echo(v):
+def echo(v):#
     """echo : Ω ⟶ ℘(∅)
 Displays the string convertion of the given object"""
     print(v)#,file=file)
     return default_types.EmptySet()
 
-def ask(t,ch):
+def ask(t,ch):#
     """ask : 𝐓×ϩ ⟶ Ω\nDisplays the given string and waits for an input of the user that must be understandable as being of the given type.\nReturns the value gave by the user in the given type"""
     assert type(ch)==default_types.S
     t=default_types.type_from_str(t)
@@ -32,14 +32,14 @@ def ask(t,ch):
         if t.recognize(rep):break
     return t.from_str(rep)
 
-def convert(obj,typ):
+def convert(obj,typ):#
     """
     convert : Ω×𝐓 ⟶ Ω
     Tries to understand the given object as being of the given type.
     It can raise an error if the input can't  be understood as being in the wanted set.
     Returns the input converted in the asked type 
     """
-    if str(obj)==str(typ):return obj
+    if str(obj)==str(typ):return obj#cas instance vers Object
     if typ == 'Ω':return obj
     if type(typ)==str:
         typ = default_types.type_from_str(typ)
@@ -47,7 +47,10 @@ def convert(obj,typ):
         return default_types.EmptySet()
     if typ ==type(obj):return obj
     if typ == default_types.S:
-        return default_types.S(str(obj))
+        try:
+            return obj.stringify()
+        except:
+            return default_types.S(str(obj))
     
     if type(obj) == default_types.ZIntervalle and type(typ)==default_types.Parts:
         if (typ.typ == default_types.N and obj.binf >= default_types.N(0)) or typ.typ == default_types.Z:

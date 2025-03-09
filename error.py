@@ -147,3 +147,7 @@ class StateError(Error):
 class CreationError(Error):
     def __init__(self,thing):
         super().__init__("CreationError","Unable to create a "+thing+" inside a loop")
+        
+class FatalError(Error):
+    def __init__(self):
+        super().__init__("FatalError",'')

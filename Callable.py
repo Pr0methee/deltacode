@@ -113,6 +113,9 @@ class Function(Callable):
                                  self.is_meth, father)  # il faut le coder !
         ex.set_args(ARGS)
         res = ex.execute()
+        self.VAR=ex.VARIABLES
+        self.DICT=ex.DICTIONARY
+        self.ALIAS=ex.ALIAS
         if self.types[1] == default_types.Parts(default_types.EmptySet):
             if type(res) == default_types.EmptySet:
                 return res

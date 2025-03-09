@@ -2,6 +2,7 @@ import Callable
 import POO
 import Variable
 import _parser_
+import default_types
 from default_functions import *
 
 
@@ -138,6 +139,25 @@ def eval_forall(ph:list[str],variables,dictionary,function,alias,objet,ex):
     del variables[ph[1]]
     return [default_types.B(True)]
 
+def inst_dict(elt, param, variables, dictionary, alias, function, objet, ex):
+    # Refaire !
+    l = elt.split('·')
+    static = False
+    if l[0] == 'me':
+        l[0] = variables[l[0]]
+    else:
+        raise
+
+    if len(l) != 2:
+        raise error.WrongSyntax()
+
+    nom_dict = l[1][:-1]
+    if '$' in nom_dict:
+        raise error.WrongSyntax()
+
+    return l[0].call(nom_dict,param)
+
+
 def evaluate(l:list,variables,dictionary,function,alias,objet,ex,k=0):#,stdout=sys.__stdout__):
     simpl(l)
     assert type(k)==int
@@ -145,7 +165,9 @@ def evaluate(l:list,variables,dictionary,function,alias,objet,ex,k=0):#,stdout=s
         if type(elt)==list:
             evaluate(elt,variables,dictionary,function,alias,objet,ex,k+1)
             if len(l[i])==1:l[i]=l[i][0]
-        elif type(elt)==str and elt in variables:
+
+    for i,elt in enumerate(l):
+        if type(elt)==str and elt in variables:
             l[i] = variables[elt].get()
         elif type(elt)==str and elt in alias:
             l[i] = variables[alias[elt].ptr].get()
@@ -164,7 +186,10 @@ def evaluate(l:list,variables,dictionary,function,alias,objet,ex,k=0):#,stdout=s
                 l[i-1]=exec_method(l[i-1],elt[1:],variables,dictionary,alias,function,objet, ex)
                 del l[i]
             elif first_occurs(elt,'$','·')=='·':
-                l[i]=meth(elt,variables,dictionary,alias,function,objet,ex)
+                if i!=len(l)-1 and type(l[i+1])!=str:
+                    l[i] = inst_dict(elt,l[i+1], variables, dictionary, alias, function, objet, ex)
+                    del l[i+1]
+                else:l[i]=meth(elt,variables,dictionary,alias,function,objet,ex)
             else:
                 if elt.count('⟨')==2:
                     l[i] = exec_param_type(elt,variables,dictionary,function,alias,objet,ex)
@@ -284,7 +309,20 @@ def evaluate(l:list,variables,dictionary,function,alias,objet,ex,k=0):#,stdout=s
                     sc[i] = l_[i].type
             l[0]=default_types.Tuple(l_,default_types.CrossSet(*sc))
     if k==0:
-        return l[0] if len(l)==1 else 'err' 
+        return l[0] if len(l)==1 else 'err'
+
+    if len(l)==1:return
+    s=[]
+    v=[]
+    for i,elt in enumerate(l):
+        if i%2==1 and (type(elt)!=str or elt!=';'):return
+        if i%2==0 and type(elt)==str:return
+        if i%2==0:
+            s.append(type(elt))
+            v.append(elt)
+    l[0]=default_types.Tuple(v,default_types.CrossSet(*s))
+    for i in range(1,len(l)):
+        del l[1]
 
 def evaluate_int(elt,variables,dictionary,function,alias,objet,ex):
     l1 = _parser_.parse(elt[1:-1].split(';')[0]+'.')
@@ -525,6 +563,7 @@ def exec_method(obj:default_types.Types|POO.Object,ch:str,variables,dictionnarie
     f=l[0]
     a=[]
     for elt in l[1:]:
+
         if elt in variables :
             a.append(variables[elt].get())
         elif elt[0]=="⟦":
@@ -533,7 +572,8 @@ def exec_method(obj:default_types.Types|POO.Object,ch:str,variables,dictionnarie
             binf = ex.eval_expr(l[0])
             bsup = ex.eval_expr(l[1])
             a.append(default_types.ZIntervalle(binf,bsup))
-        else:raise
+        else:
+            raise
 
     if not static: return obj.call(f,*a)
     return obj.static_call(f,variables,dictionnaries,alias,functions,objet,*a)
@@ -558,6 +598,7 @@ def meth(elt,variables,dictionnaries,alias,functions,objet,ex):
         raise
     if len(l)!=2:
         raise error.WrongSyntax()
+
     return exec_method(l[0],l[1],variables,dictionnaries,alias,functions,objet,ex,static)
 
 def first_occurs(ch,car1,car2):
@@ -654,7 +695,6 @@ def define_set_suchthat(l, variables, dictionary, alias, functions, objet, ex):
 
     del variables[l[0][0]]
     return convert_to_set(s)
-
 
 def set_comprehension(ch,variables,dictionary,alias,functions,objet,ex):
     #│

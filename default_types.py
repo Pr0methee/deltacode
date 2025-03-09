@@ -115,9 +115,6 @@ class N(Types):
             raise error.UnsupportedOperation("⩽",stringify(N),stringify(type(obj)))
         return B(self.value <= obj.value)
     
-    def __hash__(self) -> int:
-        return hash(self.__str__())
-    
     def __repr__(self) -> str:
         return self.__str__()
     
@@ -135,6 +132,9 @@ class N(Types):
             return R(self.value ** obj.value)
         elif type(obj)==C:
             return self**obj.re * C((self.value ** (obj.im*1j)).real,(self.value ** (obj.im*1j)).imag)
+
+    def __hash__(self) -> int:
+        return hash(self.__str__())
 
 class Z(Types):
     def __init__(self,v):
@@ -234,9 +234,6 @@ class Z(Types):
             raise error.UnsupportedOperation("⩽",stringify(Z),stringify(type(obj)))
         return B(self.value <= obj.value)
     
-    def __hash__(self) -> int:
-        return hash(self.__str__())
-    
     def __repr__(self) -> str:
         return self.__str__()
     
@@ -254,6 +251,9 @@ class Z(Types):
             return R(self.value ** obj.value)
         elif type(obj)==C:
             return self**obj.re * C((self.value ** (obj.im*1j)).real,(self.value ** (obj.im*1j)).imag)
+
+    def __hash__(self) -> int:
+        return hash(self.__str__())
 
 class R(Types):
     def __init__(self,v):
@@ -363,11 +363,11 @@ class R(Types):
             raise error.UnsupportedOperation("⩽",stringify(N),stringify(type(obj)))
         return B(self.value <= obj.value)
     
-    def __hash__(self) -> int:
-        return hash(self.__str__())
-    
     def __repr__(self) -> str:
         return self.__str__()
+
+    def __hash__(self) -> int:
+        return hash(self.__str__())
 
 class C(Types):#verifier si from_str(str) -> x
     def __init__(self,a,b=0.0):
@@ -494,9 +494,6 @@ class C(Types):#verifier si from_str(str) -> x
     def __ne__(self, __value: object) -> B:
         return B(not self==__value)
     
-    def __hash__(self) -> int:
-        return hash(self.__str__())
-    
     def __repr__(self) -> str:
         return self.__str__()
     
@@ -521,6 +518,9 @@ class C(Types):#verifier si from_str(str) -> x
     
     def __le__(self,obj):
         raise error.UnsupportedOperation("⩽",stringify(C))
+
+    def __hash__(self) -> int:
+        return hash(self.__str__())
 
 NUMERAL = (N,Z,R,C)
 
@@ -553,9 +553,6 @@ class S(Iterable):
     
     def __len__(self):
         return len(self.value)
-    
-    def __hash__(self) -> int:
-        return hash(self.__str__())
     
     def __repr__(self) -> str:
         return '"'+self.__str__()+'"'
@@ -629,6 +626,9 @@ class S(Iterable):
         assert type(car)==S
         return N(self.value.count(car.value))
 
+    def __hash__(self) -> int:
+        return hash(self.__str__())
+
 class B(Types):
     def __init__(self,v):
         super().__init__()
@@ -672,6 +672,9 @@ class B(Types):
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def __hash__(self) -> int:
+        return hash(self.__str__())
 
 class AbstractSet(Iterable):
     def __init__(self,t):
@@ -765,6 +768,9 @@ class AbstractSet(Iterable):
             raise
         return s
 
+    def __hash__(self) -> int:
+        return hash(self.__str__())
+
 class SET(AbstractSet):
     def __init__(self,t):
         super().__init__(t)
@@ -799,9 +805,6 @@ class SET(AbstractSet):
     def __len__(self):
         return len(self.__l)
     
-    def __hash__(self) -> int:
-        return hash(self.__str__())
-    
     def __eq__(self, __value: object) -> B:
         if type(__value)==EmptySet:
             return B(self.__l==set())
@@ -814,6 +817,9 @@ class SET(AbstractSet):
 
     def __iter__(self):
         return iter(self.__l)
+
+    def __hash__(self) -> int:
+        return hash(self.__str__())
 
 class OrderedSET(AbstractSet):
     def __init__(self,t):
@@ -902,9 +908,9 @@ class CrossSet(Types):
     def __eq__(self,obj):
         if type(obj)!=CrossSet:return False
         return self.schema == obj.schema
-    
-    def __hash__(self) -> int:
-        return hash(str(self))
+
+    def __hash__(self):
+        return hash(self.__str__())
 
 class Tuple(Types):
     def __init__(self,obj,typ:CrossSet):
@@ -970,6 +976,9 @@ class Tuple(Types):
         __value:Tuple
         return B(self.v!=__value.v)
 
+    def __hash__(self) -> int:
+        return hash(self.__str__())
+
 class Parts(Types):
     def __init__(self,t):
         super().__init__()
@@ -999,8 +1008,9 @@ class Parts(Types):
         assert Parts.recognize(ch,obj)
         return cls(type_from_str(ch[2:-1],obj))
     #bien coder Parts (from_str etc. ) puis faire dans executor
+
     def __hash__(self) -> int:
-        return hash(str(self))
+        return hash(self.__str__())
 
 class RIntervalle(Iterable):
     def __init__(self, binf: float | int, bsup: float | int):
@@ -1010,6 +1020,9 @@ class RIntervalle(Iterable):
     
     def __in(self,v):
         return self.binf <= v <= self.bsup
+
+    def __hash__(self) -> int:
+        return hash(self.__str__())
     
 class ZIntervalle(OrderedSET):
     def __init__(self, binf: Z, bsup: Z):
@@ -1068,6 +1081,9 @@ class ZIntervalle(OrderedSET):
     def __str__(self) -> str:
         return "⟦"+str(self.binf)+';'+str(self.bsup)+'⟧'
 
+    def __hash__(self) -> int:
+        return hash(self.__str__())
+
 class Niterator(Iterable):
     def __init__(self):
         super().__init__()
@@ -1079,6 +1095,9 @@ class Niterator(Iterable):
         #if self.i > N(5):
         #    raise StopIteration
         return self.i-N(1)
+
+    def __hash__(self) -> int:
+        return hash(self.__str__())
 
 class EmptySet(Iterable):
     def __init__(self):
@@ -1105,8 +1124,8 @@ class EmptySet(Iterable):
         return cls()
 
     def __hash__(self) -> int:
-        return hash(str(self))
-    
+        return hash(self.__str__())
+
 
 TYPES={"𝒮":S,"ℕ":N,"ℤ":Z,"ℝ":R,"ℂ":C,'𝔹':B}
 TYPES_ = {v:k for k,v in TYPES.items()}

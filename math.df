@@ -221,7 +221,3 @@ c_1 := c.
 \mapsto c.
 #
 
-\exists x \in \R.
-x := 0,2.
-x:=arccos$x.
-

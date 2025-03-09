@@ -92,6 +92,7 @@ class Object:
     def call(self,meth,instance:Instance,var,dict,al,fct,obj,*val):
         if meth not in self.methods:
             if meth=='stringify':
+                #raise
                 return default_types.S(self.__str__())
             if meth == 'eq':
                 return default_types.B(len(val)==1 and id(instance) == id(val[0]))
@@ -110,6 +111,7 @@ class Object:
         for k,v in self.methods[meth].DICT.items():
             if k.startswith('me·'):
                 instance.dict_attributes[k]=v
+
         return r
 
     def __str__(self):
@@ -217,6 +219,9 @@ class Instance:
         return self.call('gt',__o).v
 
     def __str__(self) -> str:
+        return self.type.__str__()
+
+    def stringify(self):
         return self.call('stringify').value
 
     def __eq__(self, value: object) -> bool:

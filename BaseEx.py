@@ -225,6 +225,8 @@ class BaseEx:
                 gettyp = value.type
             elif type(value) == default_types.SET:
                 gettyp = value.type
+            elif type(value)==POO.Instance:
+                gettyp=value.type
             else:
                 gettyp = default_types.TYPES_[type(value)]
 
@@ -243,7 +245,7 @@ class BaseEx:
 
 class FuncExecutor(BaseEx):
     def __init__(self, code, echo, var, func, dic, alias, obj, name, is_meth=False, father=''):
-        super().__init__({k:v for k,v in var.items() if k!='me' and v.glob}, func, {k:v for k,v in dic.items() if v.glob}, {k:v for k,v in alias.items() if v.glob}, obj, echo)
+        super().__init__({k:v for k,v in var.items() if k.startswith('me') or v.glob}, func, {k:v for k,v in dic.items() if k.startswith('me') or v.glob}, {k:v for k,v in alias.items() if k.startswith('me') or v.glob}, obj, echo)
         self.code = code
 
         self.name = name
@@ -347,10 +349,6 @@ class FuncExecutor(BaseEx):
                         return error.Halt
                     case ['CONTINUE']:
                         return error.EOI
-                    case ['WAIT']:
-                        time.sleep(3e-3)
-                    case ['BELL'] if self.echo is not None:
-                        self.echo.bell()
                     case ['RAISE', *excep]:
                         raise exceptions.get_exception(' '.join(excep))
                     case _:
@@ -543,6 +541,7 @@ class Executor(BaseEx):
             try:
                 self.common_sentence_operation(ph)
             except (error.Error, exceptions.RunTimeException,error.InFunctionError)as err:
+                raise err
                 self.raise_error(err.name(),str(err),ph)
             if self.STOP: break
 
@@ -551,13 +550,13 @@ class Executor(BaseEx):
         if self.echo is not None:
             sys.stdout = defstdout
             sys.stdin = defstdin
-
+        print(flag)
         if flag:
             print('Variables :\n', self.VARIABLES, '\nDictionnaire :\n', self.DICTIONARY, '\nFonctions :\n',
                   self.FUNCTIONS, '\nAlias :\n', self.ALIAS, '\nObjets : \n', self.OBJECTS, '\nBOUCLE :', self.BOUCLE,
                   '\nStatus : \n ', self.STATUS)
             self.echo_inf("==FIN D'EXECUTION==" + str(time.time() - t))
-
+        print('END',flag)
         if self.echo is not None: self.echo.unbind_all('<Control-c>')
         return self.STOP
 
@@ -602,10 +601,6 @@ class Executor(BaseEx):
                         return error.Halt
                     case ['CONTINUE']:
                         return error.EOI
-                    case ['WAIT']:
-                        time.sleep(3e-3)
-                    case ['BELL'] if self.echo is not None:
-                        self.echo.bell()
                     case ['RAISE', *ph]:
                         raise exceptions.get_exception(' '.join(ph))
                     case _:
@@ -661,7 +656,7 @@ class Executor(BaseEx):
         self.echo.declare(f"{kind} {name} has recieved the value : {value}\n")
 
     def echo_inf(self, inf):
-        if self.echo is None or not self.echo.active: return
+        #if self.echo is None or not self.echo.active: return
         if self.echo is not None: self.echo.informe_main(inf + '\n')
 
     def eval_expr(self, l: list[str]):
@@ -842,10 +837,6 @@ class LoopExecutor(BaseEx):
                         raise error.Halt
                     case ['CONTINUE']:
                         raise error.EOI
-                    case ['WAIT']:
-                        time.sleep(3e-3)
-                    case ['BELL'] if self.echo is not None:
-                        self.echo.bell()
                     case ['RAISE', *ph]:
                         raise exceptions.get_exception(' '.join(ph))
                     case _:
